@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Filmes & Séries</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --accent: #e85d9f;
+      --accent2: #9b5de5;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --watched: #2a2a38;
+      --border: #2e2e42;
+      --success: #4caf82;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo span {
+      font-size: 13px;
+      -webkit-text-fill-color: var(--text-muted);
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    .stats {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: white;
+    }
+
+    main {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .empty-icon { font-size: 48px; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .empty-sub { font-size: 14px; line-height: 1.5; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: opacity 0.2s;
+    }
+
+    .card.watched {
+      background: var(--watched);
+      opacity: 0.75;
+    }
+
+    .card.watched .titulo { text-decoration: line-through; color: var(--text-muted); }
+
+    .check-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-top: 2px;
+    }
+
+    .check-btn.checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .check-icon {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .check-btn.checked .check-icon { opacity: 1; }
+
+    .card-body { flex: 1; min-width: 0; }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .titulo {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      transition: all 0.2s;
+    }
+
+    .badges {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-filme { background: #1e3a5f; color: #6ab0f5; }
+    .badge-serie { background: #3d1a5f; color: #c084fc; }
+
+    .badge-watched {
+      background: #1a3d2b;
+      color: var(--success);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    .nota {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .data {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      font-size: 16px;
+      line-height: 1;
+      opacity: 0.5;
+      transition: all 0.15s;
+    }
+
+    .delete-btn:hover { opacity: 1; color: #e05; }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: white;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(232, 93, 159, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s;
+      z-index: 200;
+    }
+
+    .fab:active { transform: scale(0.92); }
+
+    /* Modal */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 300;
+      align-items: flex-end;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface2);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px;
+      width: 100%;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+      resize: none;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .tipo-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tipo-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tipo-btn.active {
+      border-color: var(--accent);
+      background: rgba(232, 93, 159, 0.1);
+      color: var(--accent);
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.15s;
+    }
+
+    .btn-add:active { opacity: 0.85; }
+
+    .btn-cancel {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 400;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-filtro="todos">Todos</button>
+    <button class="tab" data-filtro="pendentes">Para ver</button>
+    <button class="tab" data-filtro="assistidos">Assistidos</button>
+  </div>
+</header>
+
+<main id="lista"></main>
+
+<button class="fab" id="fab-btn">+</button>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-title">Adicionar à lista</div>
+    <div class="form-group">
+      <label>Título</label>
+      <input type="text" id="input-titulo" placeholder="Nome do filme ou série..." autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <div class="tipo-group">
+        <button class="tipo-btn active" data-tipo="filme">🎬 Filme</button>
+        <button class="tipo-btn" data-tipo="serie">📺 Série</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Observação <span style="font-weight:400">(opcional)</span></label>
+      <textarea id="input-nota" placeholder="Ex: recomendado pelo Pedro, disponível na Netflix..." rows="2"></textarea>
+    </div>
+    <button class="btn-add" id="btn-add">Adicionar</button>
+    <button class="btn-cancel" id="btn-cancel">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let filmes = [];
+  let filtro = 'todos';
+  let tipoSelecionado = 'filme';
+
+  const lista = document.getElementById('lista');
+  const stats = document.getElementById('stats');
+  const overlay = document.getElementById('overlay');
+  const inputTitulo = document.getElementById('input-titulo');
+  const inputNota = document.getElementById('input-nota');
+
+  async function carregar() {
+    const res = await fetch('/api/filmes');
+    filmes = await res.json();
+    renderizar();
+  }
+
+  function renderizar() {
+    const total = filmes.length;
+    const assistidos = filmes.filter(f => f.assistido).length;
+    stats.innerHTML = `${assistidos}/${total} assistidos`;
+
+    const filtrados = filmes.filter(f => {
+      if (filtro === 'pendentes') return !f.assistido;
+      if (filtro === 'assistidos') return f.assistido;
+      return true;
+    });
+
+    if (filtrados.length === 0) {
+      const msgs = {
+        todos: ['🍿', 'Lista vazia', 'Adicione filmes e séries\nque vocês querem assistir juntos.'],
+        pendentes: ['✅', 'Tudo assistido!', 'Adicionem mais filmes\npara a lista.'],
+        assistidos: ['🎬', 'Nenhum assistido ainda', 'Marquem os filmes\nconforme forem assistindo.'],
+      };
+      const [icon, title, sub] = msgs[filtro];
+      lista.innerHTML = `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+      return;
+    }
+
+    lista.innerHTML = filtrados.map(f => `
+      <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
+        <button class="check-btn ${f.assistido ? 'checked' : ''}" onclick="toggleAssistido('${f.id}')">
+          <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1.5,6 4.5,9 10.5,3"/>
+          </svg>
+        </button>
+        <div class="card-body">
+          <div class="card-top">
+            <div class="titulo">${escapeHtml(f.titulo)}</div>
+            <div class="badges">
+              <span class="badge badge-${f.tipo}">${f.tipo === 'filme' ? '🎬' : '📺'} ${f.tipo}</span>
+            </div>
+          </div>
+          ${f.nota ? `<div class="nota">${escapeHtml(f.nota)}</div>` : ''}
+          <div class="card-footer">
+            <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
+            <button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatarData(iso) {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  async function toggleAssistido(id) {
+    const f = filmes.find(x => x.id === id);
+    if (!f) return;
+    const res = await fetch(`/api/filmes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assistido: !f.assistido }),
+    });
+    const updated = await res.json();
+    filmes = filmes.map(x => x.id === id ? updated : x);
+    renderizar();
+    mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
+  }
+
+  async function deletar(id) {
+    const f = filmes.find(x => x.id === id);
+    if (!confirm(`Remover "${f.titulo}" da lista?`)) return;
+    await fetch(`/api/filmes/${id}`, { method: 'DELETE' });
+    filmes = filmes.filter(x => x.id !== id);
+    renderizar();
+    mostrarToast('🗑 Removido da lista');
+  }
+
+  async function adicionar() {
+    const titulo = inputTitulo.value.trim();
+    if (!titulo) { inputTitulo.focus(); return; }
+    const res = await fetch('/api/filmes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, tipo: tipoSelecionado, nota: inputNota.value.trim() }),
+    });
+    const novo = await res.json();
+    filmes.unshift(novo);
+    fecharModal();
+    if (filtro === 'assistidos') filtro = 'todos';
+    renderizar();
+    mostrarToast('🎉 Adicionado à lista!');
+  }
+
+  function abrirModal() {
+    overlay.classList.add('open');
+    setTimeout(() => inputTitulo.focus(), 300);
+  }
+
+  function fecharModal() {
+    overlay.classList.remove('open');
+    inputTitulo.value = '';
+    inputNota.value = '';
+  }
+
+  function mostrarToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      filtro = tab.dataset.filtro;
+      renderizar();
+    });
+  });
+
+  // Tipo buttons
+  document.querySelectorAll('.tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoSelecionado = btn.dataset.tipo;
+    });
+  });
+
+  document.getElementById('fab-btn').addEventListener('click', abrirModal);
+  document.getElementById('btn-add').addEventListener('click', adicionar);
+  document.getElementById('btn-cancel').addEventListener('click', fecharModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
+
+  inputTitulo.addEventListener('keydown', e => { if (e.key === 'Enter') adicionar(); });
+
+  carregar();
+</script>
+</body>
+</html>
