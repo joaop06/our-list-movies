@@ -302,7 +302,7 @@
       color: var(--text-muted);
     }
 
-    .delete-btn {
+    .delete-btn, .edit-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
@@ -318,6 +318,11 @@
     .delete-btn:hover {
       opacity: 1;
       color: #e05;
+    }
+
+    .edit-btn:hover {
+      opacity: 1;
+      color: var(--accent);
     }
 
     /* FAB */
@@ -833,6 +838,33 @@
     </div>
   </div>
 
+  <div class="overlay" id="overlay-edicao">
+    <div class="modal">
+      <div class="modal-title">Editar item</div>
+      <div class="form-group">
+        <label>Título</label>
+        <input type="text" id="edit-titulo" disabled style="opacity:0.45;cursor:not-allowed">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <div class="tipo-group">
+          <button class="tipo-btn" id="edit-tipo-filme" data-tipo="filme" disabled style="cursor:not-allowed;opacity:0.45">🎬 Filme</button>
+          <button class="tipo-btn" id="edit-tipo-serie" data-tipo="serie" disabled style="cursor:not-allowed;opacity:0.45">📺 Série</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Previsão para assistir <span style="font-weight:400">(opcional)</span></label>
+        <input type="date" id="edit-previsao">
+      </div>
+      <div class="form-group">
+        <label>Observação <span style="font-weight:400">(opcional)</span></label>
+        <textarea id="edit-nota" placeholder="Ex: recomendado pelo Pedro, disponível na Netflix..." rows="2"></textarea>
+      </div>
+      <button class="btn-add" id="btn-salvar-edicao">Salvar</button>
+      <button class="btn-cancel" id="btn-cancelar-edicao">Cancelar</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -915,7 +947,7 @@
               ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
               <div class="card-footer">
                 <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-                ${soAssistidos ? '<span></span>' : `<button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>`}
+                ${soAssistidos ? '<span></span>' : `<div style="display:flex;gap:4px"><button class="edit-btn" onclick="abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="deletar('${f.id}')">🗑</button></div>`}
               </div>
             </div>
           </div>
@@ -989,6 +1021,42 @@
       filmes = filmes.filter(x => x.id !== id);
       renderizar();
       mostrarToast('🗑 Removido da lista');
+    }
+
+    let editandoId = null;
+    const overlayEdicao = document.getElementById('overlay-edicao');
+
+    function abrirModalEdicao(id) {
+      const f = filmes.find(x => x.id === id);
+      if (!f || f.assistido) return;
+      editandoId = id;
+      document.getElementById('edit-titulo').value = f.titulo;
+      document.getElementById('edit-nota').value = f.nota || '';
+      document.getElementById('edit-previsao').value = f.previsaoEm || '';
+      document.getElementById('edit-tipo-filme').classList.toggle('active', f.tipo === 'filme');
+      document.getElementById('edit-tipo-serie').classList.toggle('active', f.tipo === 'serie');
+      overlayEdicao.classList.add('open');
+    }
+
+    function fecharModalEdicao() {
+      overlayEdicao.classList.remove('open');
+      editandoId = null;
+    }
+
+    async function salvarEdicao() {
+      const res = await fetch(`/api/filmes/${editandoId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nota: document.getElementById('edit-nota').value.trim(),
+          previsaoEm: document.getElementById('edit-previsao').value || null,
+        }),
+      });
+      const updated = await res.json();
+      filmes = filmes.map(x => x.id === editandoId ? updated : x);
+      fecharModalEdicao();
+      renderizar();
+      mostrarToast('✏️ Item atualizado!');
     }
 
     async function adicionar() {
@@ -1120,7 +1188,7 @@
       inputTitulo.value = result.titulo;
 
       // Seleciona o tipo correspondente
-      document.querySelectorAll('.tipo-btn').forEach(b => {
+      overlay.querySelectorAll('.tipo-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.tipo === result.tipo);
       });
       tipoSelecionado = result.tipo;
@@ -1211,11 +1279,11 @@
       else if (diff < 0 && idx > 0) mudarTab(tabsOrder[idx - 1], 'right');
     }, { passive: true });
 
-    // Tipo buttons
-    document.querySelectorAll('.tipo-btn').forEach(btn => {
+    // Tipo buttons (add modal)
+    overlay.querySelectorAll('.tipo-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.dataset.tipo === tipoSelecionado) return;
-        document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+        overlay.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         tipoSelecionado = btn.dataset.tipo;
 
@@ -1236,10 +1304,15 @@
       });
     });
 
+    // Tipo buttons (edit modal)
     document.getElementById('fab-btn').addEventListener('click', abrirModal);
     document.getElementById('btn-add').addEventListener('click', adicionar);
     document.getElementById('btn-cancel').addEventListener('click', fecharModal);
     overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
+
+    document.getElementById('btn-salvar-edicao').addEventListener('click', salvarEdicao);
+    document.getElementById('btn-cancelar-edicao').addEventListener('click', fecharModalEdicao);
+    overlayEdicao.addEventListener('click', e => { if (e.target === overlayEdicao) fecharModalEdicao(); });
 
     inputTitulo.addEventListener('keydown', e => { if (e.key === 'Enter') adicionar(); });
 
