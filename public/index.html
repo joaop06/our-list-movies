@@ -437,8 +437,8 @@
     <div class="stats" id="stats"></div>
   </div>
   <div class="tabs">
-    <button class="tab active" data-filtro="todos">Todos</button>
-    <button class="tab" data-filtro="pendentes">Para ver</button>
+    <button class="tab active" data-filtro="pendentes">Para ver</button>
+    <button class="tab" data-filtro="todos">Todos</button>
     <button class="tab" data-filtro="assistidos">Assistidos</button>
   </div>
 </header>
@@ -474,7 +474,7 @@
 
 <script>
   let filmes = [];
-  let filtro = 'todos';
+  let filtro = 'pendentes';
   let tipoSelecionado = 'filme';
   let sortable = null;
 
@@ -512,10 +512,13 @@
       return;
     }
 
+    const soAssistidos = filtro === 'assistidos';
+    const podeOrdenar = filtro === 'pendentes';
+
     lista.innerHTML = filtrados.map(f => `
       <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
-        <div class="drag-handle">⠿</div>
-        <button class="check-btn ${f.assistido ? 'checked' : ''}" onclick="toggleAssistido('${f.id}')">
+        ${podeOrdenar ? '<div class="drag-handle">⠿</div>' : '<div class="drag-handle" style="visibility:hidden">⠿</div>'}
+        <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="toggleAssistido('${f.id}')"`}>
           <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="1.5,6 4.5,9 10.5,3"/>
           </svg>
@@ -530,17 +533,18 @@
           ${f.nota ? `<div class="nota">${escapeHtml(f.nota)}</div>` : ''}
           <div class="card-footer">
             <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-            <button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>
+            ${soAssistidos ? '<span></span>' : `<button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>`}
           </div>
         </div>
       </div>
     `).join('');
 
-    initSortable();
+    initSortable(podeOrdenar);
   }
 
-  function initSortable() {
+  function initSortable(podeOrdenar) {
     if (sortable) sortable.destroy();
+    if (!podeOrdenar) { sortable = null; return; }
     sortable = Sortable.create(lista, {
       handle: '.drag-handle',
       animation: 150,
