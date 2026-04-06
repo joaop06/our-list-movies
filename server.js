@@ -276,6 +276,9 @@ app.delete('/api/filmes/:id', (req, res) => {
   const data = readData();
   const idx = data.findIndex(f => f.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Não encontrado' });
+  if (data[idx].assistido) {
+    return res.status(403).json({ error: 'Não é possível remover filmes já assistidos' });
+  }
   data.splice(idx, 1);
   writeData(data);
   removeUploadDir(req.params.id);
