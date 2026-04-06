@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="7" fill="#0f0f13"/>
+
+  <!-- Heart -->
+  <path d="M16 27 C16 27 3 18.5 3 11 C3 7 6 4.5 9.5 4.5 C11.8 4.5 14 5.8 16 8.5 C18 5.8 20.2 4.5 22.5 4.5 C26 4.5 29 7 29 11 C29 18.5 16 27 16 27Z"
+        fill="url(#heartGrad)"/>
+
+  <!-- Play triangle (white, centered slightly right for optical balance) -->
+  <polygon points="13,11.5 13,20.5 21.5,16" fill="white" opacity="0.92"/>
+
+  <defs>
+    <linearGradient id="heartGrad" x1="3" y1="4.5" x2="29" y2="27" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e85d9f"/>
+      <stop offset="100%" stop-color="#9b5de5"/>
+    </linearGradient>
+  </defs>
+</svg>
