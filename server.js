@@ -58,6 +58,19 @@ app.patch('/api/filmes/:id', (req, res) => {
   res.json(data[idx]);
 });
 
+app.put('/api/filmes/reorder', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids deve ser um array' });
+  const data = readData();
+  const map = new Map(data.map(f => [f.id, f]));
+  const reordered = ids.map(id => map.get(id)).filter(Boolean);
+  // Append any items not included in ids (safety)
+  const idsSet = new Set(ids);
+  data.filter(f => !idsSet.has(f.id)).forEach(f => reordered.push(f));
+  writeData(reordered);
+  res.json(reordered);
+});
+
 app.delete('/api/filmes/:id', (req, res) => {
   const data = readData();
   const idx = data.findIndex(f => f.id === req.params.id);

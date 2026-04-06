@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Filmes & Séries</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -402,6 +403,28 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    .drag-handle {
+      color: var(--text-muted);
+      cursor: grab;
+      padding: 4px 2px;
+      font-size: 16px;
+      flex-shrink: 0;
+      opacity: 0.4;
+      user-select: none;
+      line-height: 1;
+      margin-top: 4px;
+    }
+
+    .drag-handle:active { cursor: grabbing; }
+
+    .card.sortable-ghost {
+      opacity: 0.3;
+    }
+
+    .card.sortable-chosen {
+      box-shadow: 0 4px 20px rgba(232, 93, 159, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -453,6 +476,7 @@
   let filmes = [];
   let filtro = 'todos';
   let tipoSelecionado = 'filme';
+  let sortable = null;
 
   const lista = document.getElementById('lista');
   const stats = document.getElementById('stats');
@@ -490,6 +514,7 @@
 
     lista.innerHTML = filtrados.map(f => `
       <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
+        <div class="drag-handle">⠿</div>
         <button class="check-btn ${f.assistido ? 'checked' : ''}" onclick="toggleAssistido('${f.id}')">
           <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="1.5,6 4.5,9 10.5,3"/>
@@ -510,6 +535,38 @@
         </div>
       </div>
     `).join('');
+
+    initSortable();
+  }
+
+  function initSortable() {
+    if (sortable) sortable.destroy();
+    sortable = Sortable.create(lista, {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: async () => {
+        const visibleIds = [...lista.querySelectorAll('.card')].map(el => el.dataset.id);
+        const visibleSet = new Set(visibleIds);
+
+        // Substitui os itens visíveis nas suas posições originais pela nova ordem
+        const visibleOriginalIndices = filmes
+          .map((f, i) => (visibleSet.has(f.id) ? i : -1))
+          .filter(i => i !== -1);
+
+        const newVisible = visibleIds.map(id => filmes.find(f => f.id === id));
+        const result = [...filmes];
+        visibleOriginalIndices.forEach((idx, i) => { result[idx] = newVisible[i]; });
+
+        filmes = result;
+        await fetch('/api/filmes/reorder', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: filmes.map(f => f.id) }),
+        });
+      },
+    });
   }
 
   function escapeHtml(str) {
