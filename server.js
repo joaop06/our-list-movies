@@ -37,6 +37,7 @@ app.post('/api/filmes', (req, res) => {
     assistido: false,
     adicionadoEm: new Date().toISOString(),
     assistidoEm: null,
+    previsaoEm: req.body.previsaoEm || null,
   };
   data.unshift(novo);
   writeData(data);
