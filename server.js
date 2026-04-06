@@ -27,6 +27,45 @@ app.get('/api/filmes', (req, res) => {
   res.json(readData());
 });
 
+app.get('/api/search', async (req, res) => {
+  const { q } = req.query;
+  if (!q || q.trim().length < 2) return res.json([]);
+  const apiKey = process.env.TMDB_API_KEY;
+  if (!apiKey) return res.json([]);
+
+  try {
+    const query = encodeURIComponent(q.trim());
+    const [moviesRes, tvRes] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}&language=pt-BR`),
+      fetch(`https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${query}&language=pt-BR`),
+    ]);
+    const movies = await moviesRes.json();
+    const tv = await tvRes.json();
+
+    const results = [
+      ...(movies.results || []).slice(0, 5).map(m => ({
+        tmdb_id: m.id,
+        titulo: m.title,
+        tipo: 'filme',
+        ano: m.release_date ? m.release_date.slice(0, 4) : '',
+        poster_path: m.poster_path || null,
+        backdrop_path: m.backdrop_path || null,
+      })),
+      ...(tv.results || []).slice(0, 5).map(t => ({
+        tmdb_id: t.id,
+        titulo: t.name,
+        tipo: 'serie',
+        ano: t.first_air_date ? t.first_air_date.slice(0, 4) : '',
+        poster_path: t.poster_path || null,
+        backdrop_path: t.backdrop_path || null,
+      })),
+    ];
+    res.json(results);
+  } catch {
+    res.json([]);
+  }
+});
+
 app.post('/api/filmes', (req, res) => {
   const data = readData();
   const novo = {
@@ -38,6 +77,9 @@ app.post('/api/filmes', (req, res) => {
     adicionadoEm: new Date().toISOString(),
     assistidoEm: null,
     previsaoEm: req.body.previsaoEm || null,
+    tmdb_id: req.body.tmdb_id || null,
+    poster_path: req.body.poster_path || null,
+    backdrop_path: req.body.backdrop_path || null,
   };
   data.unshift(novo);
   writeData(data);

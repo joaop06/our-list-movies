@@ -134,14 +134,12 @@
       line-height: 1.5;
     }
 
+    /* Card — layout refeito para suportar banner */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 14px 16px;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      overflow: hidden;
       transition: opacity 0.2s;
     }
 
@@ -153,6 +151,45 @@
     .card.watched .titulo {
       text-decoration: line-through;
       color: var(--text-muted);
+    }
+
+    /* Banner de imagem do filme/série */
+    .card-banner {
+      position: relative;
+      height: 130px;
+      overflow: hidden;
+    }
+
+    .card-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-banner-fade {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(to bottom, transparent, var(--surface));
+    }
+
+    .card.watched .card-banner-fade {
+      background: linear-gradient(to bottom, transparent, var(--watched));
+    }
+
+    /* Conteúdo principal do card */
+    .card-main {
+      padding: 12px 16px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .card-banner + .card-main {
+      padding-top: 8px;
     }
 
     .check-btn {
@@ -329,6 +366,8 @@
       padding: 24px 20px 40px;
       width: 100%;
       animation: slideUp 0.25s ease;
+      max-height: 90dvh;
+      overflow-y: auto;
     }
 
     @keyframes slideUp {
@@ -591,6 +630,133 @@
       margin-bottom: 4px;
       opacity: 0.9;
     }
+
+    /* TMDB autocomplete */
+    .tmdb-suggestions {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .tmdb-result {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tmdb-result:last-child {
+      border-bottom: none;
+    }
+
+    .tmdb-result:active {
+      background: var(--surface);
+    }
+
+    .tmdb-result-poster {
+      width: 34px;
+      height: 51px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+
+    .tmdb-result-poster-placeholder {
+      width: 34px;
+      height: 51px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .tmdb-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tmdb-result-title {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .tmdb-result-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Preview do item selecionado do TMDB */
+    .tmdb-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(155, 93, 229, 0.08);
+      border: 1px solid rgba(155, 93, 229, 0.3);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+
+    .tmdb-preview img {
+      width: 38px;
+      height: 57px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .tmdb-preview-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tmdb-preview-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tmdb-preview-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .tmdb-preview-clear {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .tmdb-searching {
+      display: none;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      padding: 0 2px;
+    }
   </style>
 </head>
 
@@ -635,6 +801,16 @@
       <div class="form-group">
         <label>Título</label>
         <input type="text" id="input-titulo" placeholder="Nome do filme ou série..." autocomplete="off">
+        <div class="tmdb-searching" id="tmdb-searching">Buscando...</div>
+        <div class="tmdb-suggestions" id="tmdb-suggestions"></div>
+        <div class="tmdb-preview" id="tmdb-preview">
+          <img id="tmdb-preview-img" src="" alt="">
+          <div class="tmdb-preview-info">
+            <div class="tmdb-preview-title" id="tmdb-preview-title"></div>
+            <div class="tmdb-preview-meta" id="tmdb-preview-meta"></div>
+          </div>
+          <button class="tmdb-preview-clear" id="tmdb-preview-clear">✕</button>
+        </div>
       </div>
       <div class="form-group">
         <label>Tipo</label>
@@ -660,16 +836,24 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    const TMDB_IMG = 'https://image.tmdb.org/t/p';
+
     let filmes = [];
     let filtro = 'pendentes';
     let tipoSelecionado = 'filme';
     let sortable = null;
+    let tmdbSelecionado = null;
+    let searchTimer = null;
+    let tituloAntesDaSeleção = '';
 
     const lista = document.getElementById('lista');
     const stats = document.getElementById('stats');
     const overlay = document.getElementById('overlay');
     const inputTitulo = document.getElementById('input-titulo');
     const inputNota = document.getElementById('input-nota');
+    const elSuggestions = document.getElementById('tmdb-suggestions');
+    const elPreview = document.getElementById('tmdb-preview');
+    const elSearching = document.getElementById('tmdb-searching');
 
     async function carregar() {
       const res = await fetch('/api/filmes');
@@ -702,30 +886,41 @@
       const soAssistidos = filtro === 'assistidos';
       const podeOrdenar = filtro === 'pendentes';
 
-      lista.innerHTML = filtrados.map(f => `
-      <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
-        ${podeOrdenar ? '<div class="drag-handle">⠿</div>' : '<div class="drag-handle" style="visibility:hidden">⠿</div>'}
-        <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="toggleAssistido('${f.id}')"`}>
-          <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1.5,6 4.5,9 10.5,3"/>
-          </svg>
-        </button>
-        <div class="card-body">
-          <div class="card-top">
-            <div class="titulo">${escapeHtml(f.titulo)}</div>
-            <div class="badges">
-              <span class="badge badge-${f.tipo}">${f.tipo === 'filme' ? '🎬' : '📺'} ${f.tipo}</span>
+      lista.innerHTML = filtrados.map(f => {
+        const banner = f.backdrop_path
+          ? `<div class="card-banner">
+               <img src="${TMDB_IMG}/w500${f.backdrop_path}" loading="lazy" alt="${escapeHtml(f.titulo)}" onerror="this.closest('.card-banner').style.display='none'">
+               <div class="card-banner-fade"></div>
+             </div>`
+          : '';
+
+        return `
+        <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
+          ${banner}
+          <div class="card-main">
+            ${podeOrdenar ? '<div class="drag-handle">⠿</div>' : '<div class="drag-handle" style="visibility:hidden">⠿</div>'}
+            <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="toggleAssistido('${f.id}')"`}>
+              <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1.5,6 4.5,9 10.5,3"/>
+              </svg>
+            </button>
+            <div class="card-body">
+              <div class="card-top">
+                <div class="titulo">${escapeHtml(f.titulo)}</div>
+                <div class="badges">
+                  <span class="badge badge-${f.tipo}">${f.tipo === 'filme' ? '🎬' : '📺'} ${f.tipo}</span>
+                </div>
+              </div>
+              ${f.nota ? `<div class="nota">${escapeHtml(f.nota)}</div>` : ''}
+              ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
+              <div class="card-footer">
+                <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
+                ${soAssistidos ? '<span></span>' : `<button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>`}
+              </div>
             </div>
           </div>
-          ${f.nota ? `<div class="nota">${escapeHtml(f.nota)}</div>` : ''}
-          ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
-          <div class="card-footer">
-            <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-            ${soAssistidos ? '<span></span>' : `<button class="delete-btn" onclick="deletar('${f.id}')">🗑</button>`}
-          </div>
-        </div>
-      </div>
-    `).join('');
+        </div>`;
+      }).join('');
 
       initSortable(podeOrdenar);
     }
@@ -742,7 +937,6 @@
           const visibleIds = [...lista.querySelectorAll('.card')].map(el => el.dataset.id);
           const visibleSet = new Set(visibleIds);
 
-          // Substitui os itens visíveis nas suas posições originais pela nova ordem
           const visibleOriginalIndices = filmes
             .map((f, i) => (visibleSet.has(f.id) ? i : -1))
             .filter(i => i !== -1);
@@ -769,7 +963,6 @@
       return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
-    // Para datas no formato YYYY-MM-DD (sem hora), evita deslocamento de fuso
     function formatarDataLocal(yyyymmdd) {
       const [y, m, d] = yyyymmdd.split('-');
       return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -805,7 +998,15 @@
       const res = await fetch('/api/filmes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, tipo: tipoSelecionado, nota: inputNota.value.trim(), previsaoEm }),
+        body: JSON.stringify({
+          titulo,
+          tipo: tipoSelecionado,
+          nota: inputNota.value.trim(),
+          previsaoEm,
+          tmdb_id: tmdbSelecionado ? tmdbSelecionado.tmdb_id : null,
+          poster_path: tmdbSelecionado ? tmdbSelecionado.poster_path : null,
+          backdrop_path: tmdbSelecionado ? tmdbSelecionado.backdrop_path : null,
+        }),
       });
       const novo = await res.json();
       filmes.unshift(novo);
@@ -825,6 +1026,17 @@
       inputTitulo.value = '';
       inputNota.value = '';
       document.getElementById('input-previsao').value = '';
+      limparTmdb();
+    }
+
+    function limparTmdb() {
+      tmdbSelecionado = null;
+      tituloAntesDaSeleção = '';
+      clearTimeout(searchTimer);
+      elSuggestions.style.display = 'none';
+      elSuggestions.innerHTML = '';
+      elPreview.style.display = 'none';
+      elSearching.style.display = 'none';
     }
 
     function mostrarToast(msg) {
@@ -833,6 +1045,120 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
+
+    // --- TMDB search ---
+
+    inputTitulo.addEventListener('focus', () => {
+      if (tmdbSelecionado) return;
+      const q = inputTitulo.value.trim();
+      if (q.length >= 2) {
+        clearTimeout(searchTimer);
+        elSearching.style.display = 'block';
+        searchTimer = setTimeout(() => buscarTmdb(q), 200);
+      }
+    });
+
+    inputTitulo.addEventListener('input', () => {
+      if (tmdbSelecionado) {
+        tmdbSelecionado = null;
+        elPreview.style.display = 'none';
+      }
+      clearTimeout(searchTimer);
+      const q = inputTitulo.value.trim();
+      if (q.length < 2) {
+        elSuggestions.style.display = 'none';
+        elSearching.style.display = 'none';
+        return;
+      }
+      elSearching.style.display = 'block';
+      searchTimer = setTimeout(() => buscarTmdb(q), 420);
+    });
+
+    async function buscarTmdb(q) {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const results = await res.json();
+        elSearching.style.display = 'none';
+        mostrarSugestoes(results.filter(r => r.tipo === tipoSelecionado));
+      } catch {
+        elSearching.style.display = 'none';
+        elSuggestions.style.display = 'none';
+      }
+    }
+
+    function mostrarSugestoes(results) {
+      if (!results.length) {
+        elSuggestions.style.display = 'none';
+        return;
+      }
+      elSuggestions.innerHTML = results.map((r, i) => {
+        const poster = r.poster_path
+          ? `<img class="tmdb-result-poster" src="${TMDB_IMG}/w92${r.poster_path}" loading="lazy" alt="" onerror="this.style.display='none'">`
+          : `<div class="tmdb-result-poster-placeholder">${r.tipo === 'filme' ? '🎬' : '📺'}</div>`;
+        const tipoLabel = r.tipo === 'filme' ? '🎬 Filme' : '📺 Série';
+        const meta = r.ano ? `${tipoLabel} · ${r.ano}` : tipoLabel;
+        return `<div class="tmdb-result" data-idx="${i}">
+          ${poster}
+          <div class="tmdb-result-info">
+            <div class="tmdb-result-title">${escapeHtml(r.titulo)}</div>
+            <div class="tmdb-result-meta">${meta}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      elSuggestions._results = results;
+      elSuggestions.style.display = 'block';
+
+      elSuggestions.querySelectorAll('.tmdb-result').forEach((el, i) => {
+        el.addEventListener('click', () => selecionarTmdb(results[i]));
+      });
+    }
+
+    function selecionarTmdb(result) {
+      tituloAntesDaSeleção = inputTitulo.value;
+      tmdbSelecionado = result;
+      inputTitulo.value = result.titulo;
+
+      // Seleciona o tipo correspondente
+      document.querySelectorAll('.tipo-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tipo === result.tipo);
+      });
+      tipoSelecionado = result.tipo;
+
+      elSuggestions.style.display = 'none';
+
+      // Exibe preview
+      const previewImg = document.getElementById('tmdb-preview-img');
+      if (result.poster_path) {
+        previewImg.onerror = () => { previewImg.style.display = 'none'; };
+        previewImg.src = `${TMDB_IMG}/w154${result.poster_path}`;
+        previewImg.style.display = 'block';
+      } else {
+        previewImg.style.display = 'none';
+      }
+      document.getElementById('tmdb-preview-title').textContent = result.titulo;
+      const tipoLabel = result.tipo === 'filme' ? '🎬 Filme' : '📺 Série';
+      document.getElementById('tmdb-preview-meta').textContent = result.ano ? `${tipoLabel} · ${result.ano}` : tipoLabel;
+      elPreview.style.display = 'flex';
+    }
+
+    document.getElementById('tmdb-preview-clear').addEventListener('click', () => {
+      limparTmdb();
+      inputTitulo.value = tituloAntesDaSeleção;
+      inputTitulo.focus();
+      const q = tituloAntesDaSeleção.trim();
+      if (q.length >= 2) {
+        elSearching.style.display = 'block';
+        searchTimer = setTimeout(() => buscarTmdb(q), 200);
+      }
+    });
+
+    // Fecha sugestões ao clicar fora
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#tmdb-suggestions') && e.target !== inputTitulo) {
+        elSuggestions.style.display = 'none';
+      }
+    });
 
     // Tabs
     const tabsOrder = ['pendentes', 'todos', 'assistidos'];
@@ -850,12 +1176,10 @@
       filtro = novoFiltro;
       tabTransitioning = true;
 
-      // Sai pelo lado correspondente à direção
       lista.style.cssText = `transition: opacity 0.14s ease, transform 0.14s ease; opacity: 0; transform: translateX(${dir === 'left' ? '-28px' : '28px'})`;
 
       setTimeout(() => {
         renderizar();
-        // Posiciona novo conteúdo no lado oposto, invisível
         lista.style.cssText = `transition: none; opacity: 0; transform: translateX(${dir === 'left' ? '28px' : '-28px'})`;
 
         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -890,9 +1214,25 @@
     // Tipo buttons
     document.querySelectorAll('.tipo-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.dataset.tipo === tipoSelecionado) return;
         document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         tipoSelecionado = btn.dataset.tipo;
+
+        // Se havia seleção TMDB, limpa pois o tipo mudou
+        if (tmdbSelecionado) {
+          tmdbSelecionado = null;
+          elPreview.style.display = 'none';
+        }
+
+        // Rebusca com o novo tipo se há título
+        const q = inputTitulo.value.trim();
+        if (q.length >= 2) {
+          clearTimeout(searchTimer);
+          elSearching.style.display = 'block';
+          elSuggestions.style.display = 'none';
+          searchTimer = setTimeout(() => buscarTmdb(q), 200);
+        }
       });
     });
 
