@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Filmes & Séries</title>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg: #0f0f13;
@@ -114,9 +119,20 @@
       text-align: center;
     }
 
-    .empty-icon { font-size: 48px; }
-    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); }
-    .empty-sub { font-size: 14px; line-height: 1.5; }
+    .empty-icon {
+      font-size: 48px;
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .empty-sub {
+      font-size: 14px;
+      line-height: 1.5;
+    }
 
     .card {
       background: var(--surface);
@@ -134,7 +150,10 @@
       opacity: 0.75;
     }
 
-    .card.watched .titulo { text-decoration: line-through; color: var(--text-muted); }
+    .card.watched .titulo {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
 
     .check-btn {
       width: 28px;
@@ -163,9 +182,14 @@
       transition: opacity 0.15s;
     }
 
-    .check-btn.checked .check-icon { opacity: 1; }
+    .check-btn.checked .check-icon {
+      opacity: 1;
+    }
 
-    .card-body { flex: 1; min-width: 0; }
+    .card-body {
+      flex: 1;
+      min-width: 0;
+    }
 
     .card-top {
       display: flex;
@@ -197,8 +221,15 @@
       letter-spacing: 0.5px;
     }
 
-    .badge-filme { background: #1e3a5f; color: #6ab0f5; }
-    .badge-serie { background: #3d1a5f; color: #c084fc; }
+    .badge-filme {
+      background: #1e3a5f;
+      color: #6ab0f5;
+    }
+
+    .badge-serie {
+      background: #3d1a5f;
+      color: #c084fc;
+    }
 
     .badge-watched {
       background: #1a3d2b;
@@ -247,7 +278,10 @@
       transition: all 0.15s;
     }
 
-    .delete-btn:hover { opacity: 1; color: #e05; }
+    .delete-btn:hover {
+      opacity: 1;
+      color: #e05;
+    }
 
     /* FAB */
     .fab {
@@ -271,19 +305,23 @@
       z-index: 200;
     }
 
-    .fab:active { transform: scale(0.92); }
+    .fab:active {
+      transform: scale(0.92);
+    }
 
     /* Modal */
     .overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0, 0, 0, 0.7);
       z-index: 300;
       align-items: flex-end;
     }
 
-    .overlay.open { display: flex; }
+    .overlay.open {
+      display: flex;
+    }
 
     .modal {
       background: var(--surface2);
@@ -294,8 +332,13 @@
     }
 
     @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+      from {
+        transform: translateY(100%);
+      }
+
+      to {
+        transform: translateY(0);
+      }
     }
 
     .modal-title {
@@ -317,7 +360,8 @@
       margin-bottom: 6px;
     }
 
-    input[type="text"], textarea {
+    input[type="text"],
+    textarea {
       width: 100%;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -331,7 +375,9 @@
       resize: none;
     }
 
-    input[type="text"]:focus, textarea:focus, input[type="date"]:focus {
+    input[type="text"]:focus,
+    textarea:focus,
+    input[type="date"]:focus {
       border-color: var(--accent);
     }
 
@@ -387,7 +433,9 @@
       transition: opacity 0.15s;
     }
 
-    .btn-add:active { opacity: 0.85; }
+    .btn-add:active {
+      opacity: 0.85;
+    }
 
     .btn-cancel {
       width: 100%;
@@ -436,7 +484,9 @@
       margin-top: 4px;
     }
 
-    .drag-handle:active { cursor: grabbing; }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
 
     .card.sortable-ghost {
       opacity: 0.3;
@@ -445,101 +495,214 @@
     .card.sortable-chosen {
       box-shadow: 0 4px 20px rgba(232, 93, 159, 0.3);
     }
-  </style>
-</head>
-<body>
 
-<header>
-  <div class="header-top">
-    <div>
-      <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
-    </div>
-    <div class="stats" id="stats"></div>
-  </div>
-  <div class="tabs">
-    <button class="tab active" data-filtro="pendentes">Para ver</button>
-    <button class="tab" data-filtro="todos">Todos</button>
-    <button class="tab" data-filtro="assistidos">Assistidos</button>
-  </div>
-</header>
-
-<main id="lista"></main>
-
-<button class="fab" id="fab-btn">+</button>
-
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <div class="modal-title">Adicionar à lista</div>
-    <div class="form-group">
-      <label>Título</label>
-      <input type="text" id="input-titulo" placeholder="Nome do filme ou série..." autocomplete="off">
-    </div>
-    <div class="form-group">
-      <label>Tipo</label>
-      <div class="tipo-group">
-        <button class="tipo-btn active" data-tipo="filme">🎬 Filme</button>
-        <button class="tipo-btn" data-tipo="serie">📺 Série</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Previsão para assistir <span style="font-weight:400">(opcional)</span></label>
-      <input type="date" id="input-previsao">
-    </div>
-    <div class="form-group">
-      <label>Observação <span style="font-weight:400">(opcional)</span></label>
-      <textarea id="input-nota" placeholder="Ex: recomendado pelo Pedro, disponível na Netflix..." rows="2"></textarea>
-    </div>
-    <button class="btn-add" id="btn-add">Adicionar</button>
-    <button class="btn-cancel" id="btn-cancel">Cancelar</button>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-  let filmes = [];
-  let filtro = 'pendentes';
-  let tipoSelecionado = 'filme';
-  let sortable = null;
-
-  const lista = document.getElementById('lista');
-  const stats = document.getElementById('stats');
-  const overlay = document.getElementById('overlay');
-  const inputTitulo = document.getElementById('input-titulo');
-  const inputNota = document.getElementById('input-nota');
-
-  async function carregar() {
-    const res = await fetch('/api/filmes');
-    filmes = await res.json();
-    renderizar();
-  }
-
-  function renderizar() {
-    const total = filmes.length;
-    const assistidos = filmes.filter(f => f.assistido).length;
-    stats.innerHTML = `${assistidos}/${total} assistidos`;
-
-    const filtrados = filmes.filter(f => {
-      if (filtro === 'pendentes') return !f.assistido;
-      if (filtro === 'assistidos') return f.assistido;
-      return true;
-    });
-
-    if (filtrados.length === 0) {
-      const msgs = {
-        todos: ['🍿', 'Lista vazia', 'Adicione filmes e séries\nque vocês querem assistir juntos.'],
-        pendentes: ['✅', 'Tudo assistido!', 'Adicionem mais filmes\npara a lista.'],
-        assistidos: ['🎬', 'Nenhum assistido ainda', 'Marquem os filmes\nconforme forem assistindo.'],
-      };
-      const [icon, title, sub] = msgs[filtro];
-      lista.innerHTML = `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
-      return;
+    /* Hero section */
+    .hero {
+      position: relative;
+      height: 230px;
+      overflow: hidden;
+      display: flex;
+      flex-shrink: 0;
     }
 
-    const soAssistidos = filtro === 'assistidos';
-    const podeOrdenar = filtro === 'pendentes';
+    .hero-photos {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      gap: 2px;
+    }
 
-    lista.innerHTML = filtrados.map(f => `
+    .hero-photo {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: blur(1px);
+      transform: scale(1.04);
+    }
+
+    .hero-photo:nth-child(1) img {
+      object-position: center 30%;
+    }
+
+    .hero-photo:nth-child(2) img {
+      object-position: center 15%;
+    }
+
+    .hero-photo:nth-child(3) img {
+      object-position: center 20%;
+    }
+
+    .hero-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+          rgba(15, 15, 19, 0.1) 0%,
+          rgba(15, 15, 19, 0.15) 40%,
+          rgba(15, 15, 19, 0.7) 75%,
+          rgba(15, 15, 19, 1) 100%);
+      pointer-events: none;
+    }
+
+    .hero-side-fade-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 40px;
+      background: linear-gradient(to right, rgba(15, 15, 19, 0.5), transparent);
+      pointer-events: none;
+    }
+
+    .hero-side-fade-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 40px;
+      background: linear-gradient(to left, rgba(15, 15, 19, 0.5), transparent);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: absolute;
+      bottom: 14px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .hero-tagline {
+      font-size: 13px;
+      color: rgba(240, 240, 240, 0.75);
+      letter-spacing: 0.3px;
+    }
+
+    .hero-hearts {
+      font-size: 18px;
+      letter-spacing: 6px;
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-filtro="pendentes">Para ver</button>
+      <button class="tab" data-filtro="todos">Todos</button>
+      <button class="tab" data-filtro="assistidos">Assistidos</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-photos">
+      <div class="hero-photo"><img src="/images/2.jpeg" alt="Nós"></div>
+      <div class="hero-photo"><img src="/images/3.jpeg" alt="Nós"></div>
+      <div class="hero-photo"><img src="/images/1.jpeg" alt="Nós"></div>
+    </div>
+    <div class="hero-gradient"></div>
+    <div class="hero-side-fade-left"></div>
+    <div class="hero-side-fade-right"></div>
+    <div class="hero-content">
+      <div class="hero-hearts">🎬 ❤️ 🍿</div>
+      <div class="hero-tagline">filmes & séries para assistir juntos</div>
+    </div>
+  </section>
+
+  <main id="lista"></main>
+
+  <button class="fab" id="fab-btn">+</button>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-title">Adicionar à lista</div>
+      <div class="form-group">
+        <label>Título</label>
+        <input type="text" id="input-titulo" placeholder="Nome do filme ou série..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <div class="tipo-group">
+          <button class="tipo-btn active" data-tipo="filme">🎬 Filme</button>
+          <button class="tipo-btn" data-tipo="serie">📺 Série</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Previsão para assistir <span style="font-weight:400">(opcional)</span></label>
+        <input type="date" id="input-previsao">
+      </div>
+      <div class="form-group">
+        <label>Observação <span style="font-weight:400">(opcional)</span></label>
+        <textarea id="input-nota" placeholder="Ex: recomendado pelo Pedro, disponível na Netflix..."
+          rows="2"></textarea>
+      </div>
+      <button class="btn-add" id="btn-add">Adicionar</button>
+      <button class="btn-cancel" id="btn-cancel">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let filmes = [];
+    let filtro = 'pendentes';
+    let tipoSelecionado = 'filme';
+    let sortable = null;
+
+    const lista = document.getElementById('lista');
+    const stats = document.getElementById('stats');
+    const overlay = document.getElementById('overlay');
+    const inputTitulo = document.getElementById('input-titulo');
+    const inputNota = document.getElementById('input-nota');
+
+    async function carregar() {
+      const res = await fetch('/api/filmes');
+      filmes = await res.json();
+      renderizar();
+    }
+
+    function renderizar() {
+      const total = filmes.length;
+      const assistidos = filmes.filter(f => f.assistido).length;
+      stats.innerHTML = `${assistidos}/${total} assistidos`;
+
+      const filtrados = filmes.filter(f => {
+        if (filtro === 'pendentes') return !f.assistido;
+        if (filtro === 'assistidos') return f.assistido;
+        return true;
+      });
+
+      if (filtrados.length === 0) {
+        const msgs = {
+          todos: ['🍿', 'Lista vazia', 'Adicione filmes e séries\nque vocês querem assistir juntos.'],
+          pendentes: ['✅', 'Tudo assistido!', 'Adicionem mais filmes\npara a lista.'],
+          assistidos: ['🎬', 'Nenhum assistido ainda', 'Marquem os filmes\nconforme forem assistindo.'],
+        };
+        const [icon, title, sub] = msgs[filtro];
+        lista.innerHTML = `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+        return;
+      }
+
+      const soAssistidos = filtro === 'assistidos';
+      const podeOrdenar = filtro === 'pendentes';
+
+      lista.innerHTML = filtrados.map(f => `
       <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
         ${podeOrdenar ? '<div class="drag-handle">⠿</div>' : '<div class="drag-handle" style="visibility:hidden">⠿</div>'}
         <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="toggleAssistido('${f.id}')"`}>
@@ -564,140 +727,141 @@
       </div>
     `).join('');
 
-    initSortable(podeOrdenar);
-  }
+      initSortable(podeOrdenar);
+    }
 
-  function initSortable(podeOrdenar) {
-    if (sortable) sortable.destroy();
-    if (!podeOrdenar) { sortable = null; return; }
-    sortable = Sortable.create(lista, {
-      handle: '.drag-handle',
-      animation: 150,
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      onEnd: async () => {
-        const visibleIds = [...lista.querySelectorAll('.card')].map(el => el.dataset.id);
-        const visibleSet = new Set(visibleIds);
+    function initSortable(podeOrdenar) {
+      if (sortable) sortable.destroy();
+      if (!podeOrdenar) { sortable = null; return; }
+      sortable = Sortable.create(lista, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: async () => {
+          const visibleIds = [...lista.querySelectorAll('.card')].map(el => el.dataset.id);
+          const visibleSet = new Set(visibleIds);
 
-        // Substitui os itens visíveis nas suas posições originais pela nova ordem
-        const visibleOriginalIndices = filmes
-          .map((f, i) => (visibleSet.has(f.id) ? i : -1))
-          .filter(i => i !== -1);
+          // Substitui os itens visíveis nas suas posições originais pela nova ordem
+          const visibleOriginalIndices = filmes
+            .map((f, i) => (visibleSet.has(f.id) ? i : -1))
+            .filter(i => i !== -1);
 
-        const newVisible = visibleIds.map(id => filmes.find(f => f.id === id));
-        const result = [...filmes];
-        visibleOriginalIndices.forEach((idx, i) => { result[idx] = newVisible[i]; });
+          const newVisible = visibleIds.map(id => filmes.find(f => f.id === id));
+          const result = [...filmes];
+          visibleOriginalIndices.forEach((idx, i) => { result[idx] = newVisible[i]; });
 
-        filmes = result;
-        await fetch('/api/filmes/reorder', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids: filmes.map(f => f.id) }),
-        });
-      },
-    });
-  }
+          filmes = result;
+          await fetch('/api/filmes/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: filmes.map(f => f.id) }),
+          });
+        },
+      });
+    }
 
-  function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-  function formatarData(iso) {
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+    function formatarData(iso) {
+      return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
 
-  // Para datas no formato YYYY-MM-DD (sem hora), evita deslocamento de fuso
-  function formatarDataLocal(yyyymmdd) {
-    const [y, m, d] = yyyymmdd.split('-');
-    return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+    // Para datas no formato YYYY-MM-DD (sem hora), evita deslocamento de fuso
+    function formatarDataLocal(yyyymmdd) {
+      const [y, m, d] = yyyymmdd.split('-');
+      return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
 
-  async function toggleAssistido(id) {
-    const f = filmes.find(x => x.id === id);
-    if (!f) return;
-    const res = await fetch(`/api/filmes/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assistido: !f.assistido }),
-    });
-    const updated = await res.json();
-    filmes = filmes.map(x => x.id === id ? updated : x);
-    renderizar();
-    mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
-  }
-
-  async function deletar(id) {
-    const f = filmes.find(x => x.id === id);
-    if (!confirm(`Remover "${f.titulo}" da lista?`)) return;
-    await fetch(`/api/filmes/${id}`, { method: 'DELETE' });
-    filmes = filmes.filter(x => x.id !== id);
-    renderizar();
-    mostrarToast('🗑 Removido da lista');
-  }
-
-  async function adicionar() {
-    const titulo = inputTitulo.value.trim();
-    if (!titulo) { inputTitulo.focus(); return; }
-    const previsaoEm = document.getElementById('input-previsao').value || null;
-    const res = await fetch('/api/filmes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titulo, tipo: tipoSelecionado, nota: inputNota.value.trim(), previsaoEm }),
-    });
-    const novo = await res.json();
-    filmes.unshift(novo);
-    fecharModal();
-    if (filtro === 'assistidos') filtro = 'todos';
-    renderizar();
-    mostrarToast('🎉 Adicionado à lista!');
-  }
-
-  function abrirModal() {
-    overlay.classList.add('open');
-    setTimeout(() => inputTitulo.focus(), 300);
-  }
-
-  function fecharModal() {
-    overlay.classList.remove('open');
-    inputTitulo.value = '';
-    inputNota.value = '';
-    document.getElementById('input-previsao').value = '';
-  }
-
-  function mostrarToast(msg) {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
-  }
-
-  // Tabs
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      filtro = tab.dataset.filtro;
+    async function toggleAssistido(id) {
+      const f = filmes.find(x => x.id === id);
+      if (!f) return;
+      const res = await fetch(`/api/filmes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assistido: !f.assistido }),
+      });
+      const updated = await res.json();
+      filmes = filmes.map(x => x.id === id ? updated : x);
       renderizar();
+      mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
+    }
+
+    async function deletar(id) {
+      const f = filmes.find(x => x.id === id);
+      if (!confirm(`Remover "${f.titulo}" da lista?`)) return;
+      await fetch(`/api/filmes/${id}`, { method: 'DELETE' });
+      filmes = filmes.filter(x => x.id !== id);
+      renderizar();
+      mostrarToast('🗑 Removido da lista');
+    }
+
+    async function adicionar() {
+      const titulo = inputTitulo.value.trim();
+      if (!titulo) { inputTitulo.focus(); return; }
+      const previsaoEm = document.getElementById('input-previsao').value || null;
+      const res = await fetch('/api/filmes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, tipo: tipoSelecionado, nota: inputNota.value.trim(), previsaoEm }),
+      });
+      const novo = await res.json();
+      filmes.unshift(novo);
+      fecharModal();
+      if (filtro === 'assistidos') filtro = 'todos';
+      renderizar();
+      mostrarToast('🎉 Adicionado à lista!');
+    }
+
+    function abrirModal() {
+      overlay.classList.add('open');
+      setTimeout(() => inputTitulo.focus(), 300);
+    }
+
+    function fecharModal() {
+      overlay.classList.remove('open');
+      inputTitulo.value = '';
+      inputNota.value = '';
+      document.getElementById('input-previsao').value = '';
+    }
+
+    function mostrarToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        filtro = tab.dataset.filtro;
+        renderizar();
+      });
     });
-  });
 
-  // Tipo buttons
-  document.querySelectorAll('.tipo-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      tipoSelecionado = btn.dataset.tipo;
+    // Tipo buttons
+    document.querySelectorAll('.tipo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        tipoSelecionado = btn.dataset.tipo;
+      });
     });
-  });
 
-  document.getElementById('fab-btn').addEventListener('click', abrirModal);
-  document.getElementById('btn-add').addEventListener('click', adicionar);
-  document.getElementById('btn-cancel').addEventListener('click', fecharModal);
-  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
+    document.getElementById('fab-btn').addEventListener('click', abrirModal);
+    document.getElementById('btn-add').addEventListener('click', adicionar);
+    document.getElementById('btn-cancel').addEventListener('click', fecharModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
 
-  inputTitulo.addEventListener('keydown', e => { if (e.key === 'Enter') adicionar(); });
+    inputTitulo.addEventListener('keydown', e => { if (e.key === 'Enter') adicionar(); });
 
-  carregar();
-</script>
+    carregar();
+  </script>
 </body>
+
 </html>
