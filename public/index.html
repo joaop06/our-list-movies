@@ -158,6 +158,14 @@
       position: relative;
       height: 130px;
       overflow: hidden;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .card-banner.banner-loaded {
+      background: none;
+      animation: none;
     }
 
     .card-banner img {
@@ -165,6 +173,12 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .card-banner img.img-loaded {
+      opacity: 1;
     }
 
     .card-banner-fade {
@@ -481,6 +495,11 @@
       opacity: 0.85;
     }
 
+    .btn-add:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     .btn-cancel {
       width: 100%;
       padding: 12px;
@@ -761,7 +780,109 @@
       color: var(--text-muted);
       margin-top: 6px;
       padding: 0 2px;
+      align-items: center;
     }
+
+    /* ---- Loading States ---- */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+
+    /* Inline spinner (TMDB search) */
+    .inline-spinner {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border: 1.5px solid rgba(136, 136, 136, 0.25);
+      border-top-color: var(--text-muted);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 5px;
+      flex-shrink: 0;
+    }
+
+    /* Button spinner */
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 7px;
+    }
+
+    /* Check button spinner */
+    .check-spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+
+    /* Skeleton cards (page load) */
+    .card-skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .card-skeleton-banner {
+      height: 130px;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .card-skeleton-body {
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .card-skeleton-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .card-skeleton-lines {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 3px;
+    }
+
+    .card-skeleton-line {
+      height: 13px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .card-skeleton-line:nth-child(1) { width: 62%; }
+    .card-skeleton-line:nth-child(2) { width: 38%; }
+    .card-skeleton-line:nth-child(3) { width: 48%; margin-top: 2px; }
   </style>
 </head>
 
@@ -806,7 +927,7 @@
       <div class="form-group">
         <label>Título</label>
         <input type="text" id="input-titulo" placeholder="Nome do filme ou série..." autocomplete="off">
-        <div class="tmdb-searching" id="tmdb-searching">Buscando...</div>
+        <div class="tmdb-searching" id="tmdb-searching"><span class="inline-spinner"></span>Buscando na TMDB...</div>
         <div class="tmdb-suggestions" id="tmdb-suggestions"></div>
         <div class="tmdb-preview" id="tmdb-preview">
           <img id="tmdb-preview-img" src="" alt="">
@@ -887,7 +1008,22 @@
     const elPreview = document.getElementById('tmdb-preview');
     const elSearching = document.getElementById('tmdb-searching');
 
+    function skeletonCard(withBanner) {
+      return `<div class="card-skeleton">
+        ${withBanner ? '<div class="card-skeleton-banner"></div>' : ''}
+        <div class="card-skeleton-body">
+          <div class="card-skeleton-circle"></div>
+          <div class="card-skeleton-lines">
+            <div class="card-skeleton-line"></div>
+            <div class="card-skeleton-line"></div>
+            <div class="card-skeleton-line"></div>
+          </div>
+        </div>
+      </div>`;
+    }
+
     async function carregar() {
+      lista.innerHTML = skeletonCard(true) + skeletonCard(true) + skeletonCard(false);
       const res = await fetch('/api/filmes');
       filmes = await res.json();
       renderizar();
@@ -921,7 +1057,9 @@
       lista.innerHTML = filtrados.map(f => {
         const banner = f.backdrop_path
           ? `<div class="card-banner">
-               <img src="${TMDB_IMG}/w500${f.backdrop_path}" loading="lazy" alt="${escapeHtml(f.titulo)}" onerror="this.closest('.card-banner').style.display='none'">
+               <img src="${TMDB_IMG}/w500${f.backdrop_path}" loading="lazy" alt="${escapeHtml(f.titulo)}"
+                 onload="this.classList.add('img-loaded'); this.closest('.card-banner').classList.add('banner-loaded')"
+                 onerror="this.closest('.card-banner').style.display='none'">
                <div class="card-banner-fade"></div>
              </div>`
           : '';
@@ -1003,15 +1141,25 @@
     async function toggleAssistido(id) {
       const f = filmes.find(x => x.id === id);
       if (!f) return;
-      const res = await fetch(`/api/filmes/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assistido: !f.assistido }),
-      });
-      const updated = await res.json();
-      filmes = filmes.map(x => x.id === id ? updated : x);
-      renderizar();
-      mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
+      const card = lista.querySelector(`[data-id="${id}"]`);
+      const btn = card?.querySelector('.check-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="check-spinner"></span>';
+      }
+      try {
+        const res = await fetch(`/api/filmes/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assistido: !f.assistido }),
+        });
+        const updated = await res.json();
+        filmes = filmes.map(x => x.id === id ? updated : x);
+        renderizar();
+        mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
+      } catch {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>'; }
+      }
     }
 
     async function deletar(id) {
@@ -1044,44 +1192,64 @@
     }
 
     async function salvarEdicao() {
-      const res = await fetch(`/api/filmes/${editandoId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nota: document.getElementById('edit-nota').value.trim(),
-          previsaoEm: document.getElementById('edit-previsao').value || null,
-        }),
-      });
-      const updated = await res.json();
-      filmes = filmes.map(x => x.id === editandoId ? updated : x);
-      fecharModalEdicao();
-      renderizar();
-      mostrarToast('✏️ Item atualizado!');
+      const btnSalvar = document.getElementById('btn-salvar-edicao');
+      btnSalvar.disabled = true;
+      btnSalvar.innerHTML = '<span class="btn-spinner"></span>Salvando...';
+      try {
+        const res = await fetch(`/api/filmes/${editandoId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nota: document.getElementById('edit-nota').value.trim(),
+            previsaoEm: document.getElementById('edit-previsao').value || null,
+          }),
+        });
+        const updated = await res.json();
+        filmes = filmes.map(x => x.id === editandoId ? updated : x);
+        fecharModalEdicao();
+        renderizar();
+        mostrarToast('✏️ Item atualizado!');
+      } catch {
+        mostrarToast('Erro ao salvar. Tente novamente.');
+      } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = 'Salvar';
+      }
     }
 
     async function adicionar() {
       const titulo = inputTitulo.value.trim();
       if (!titulo) { inputTitulo.focus(); return; }
-      const previsaoEm = document.getElementById('input-previsao').value || null;
-      const res = await fetch('/api/filmes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titulo,
-          tipo: tipoSelecionado,
-          nota: inputNota.value.trim(),
-          previsaoEm,
-          tmdb_id: tmdbSelecionado ? tmdbSelecionado.tmdb_id : null,
-          poster_path: tmdbSelecionado ? tmdbSelecionado.poster_path : null,
-          backdrop_path: tmdbSelecionado ? tmdbSelecionado.backdrop_path : null,
-        }),
-      });
-      const novo = await res.json();
-      filmes.unshift(novo);
-      fecharModal();
-      if (filtro === 'assistidos') filtro = 'todos';
-      renderizar();
-      mostrarToast('🎉 Adicionado à lista!');
+      const btnAdd = document.getElementById('btn-add');
+      btnAdd.disabled = true;
+      btnAdd.innerHTML = '<span class="btn-spinner"></span>Adicionando...';
+      try {
+        const previsaoEm = document.getElementById('input-previsao').value || null;
+        const res = await fetch('/api/filmes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            titulo,
+            tipo: tipoSelecionado,
+            nota: inputNota.value.trim(),
+            previsaoEm,
+            tmdb_id: tmdbSelecionado ? tmdbSelecionado.tmdb_id : null,
+            poster_path: tmdbSelecionado ? tmdbSelecionado.poster_path : null,
+            backdrop_path: tmdbSelecionado ? tmdbSelecionado.backdrop_path : null,
+          }),
+        });
+        const novo = await res.json();
+        filmes.unshift(novo);
+        fecharModal();
+        if (filtro === 'assistidos') filtro = 'todos';
+        renderizar();
+        mostrarToast('🎉 Adicionado à lista!');
+      } catch {
+        mostrarToast('Erro ao adicionar. Tente novamente.');
+      } finally {
+        btnAdd.disabled = false;
+        btnAdd.innerHTML = 'Adicionar';
+      }
     }
 
     function abrirModal() {
