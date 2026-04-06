@@ -884,6 +884,411 @@
     .card-skeleton-line:nth-child(1) { width: 62%; }
     .card-skeleton-line:nth-child(2) { width: 38%; }
     .card-skeleton-line:nth-child(3) { width: 48%; margin-top: 2px; }
+
+    /* ---- Vista detalhe (full-screen) ---- */
+    .card {
+      cursor: pointer;
+    }
+
+    body.detail-open .fab {
+      display: none;
+    }
+
+    .detail-view {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 250;
+      background: var(--bg);
+      flex-direction: column;
+    }
+
+    .detail-view.open {
+      display: flex;
+    }
+
+    /* Cabeçalho da vista detalhe: mesma linguagem visual do header principal */
+    .detail-header {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 12px;
+      position: relative;
+      z-index: 101;
+    }
+
+    .detail-header .header-top {
+      margin-bottom: 0;
+    }
+
+    .detail-back {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 12px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .detail-back:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .detail-back:active {
+      opacity: 0.85;
+    }
+
+    .detail-toolbar-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .detail-icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .detail-icon-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .detail-icon-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: var(--border);
+    }
+
+    .detail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .detail-hero-wrap {
+      position: relative;
+      min-height: 200px;
+    }
+
+    .detail-hero-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center top;
+      filter: saturate(1.05);
+    }
+
+    .detail-hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+          rgba(15, 15, 19, 0.25) 0%,
+          rgba(15, 15, 19, 0.85) 55%,
+          var(--bg) 100%);
+    }
+
+    .detail-hero-bg:not([style*="background-image"]) {
+      background: linear-gradient(145deg, var(--surface2), var(--surface));
+    }
+
+    .detail-hero-content {
+      position: relative;
+      padding: 20px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .detail-poster-wrap {
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+      flex-shrink: 0;
+    }
+
+    .detail-poster {
+      display: block;
+      width: min(200px, 42vw);
+      height: auto;
+    }
+
+    .detail-poster-placeholder {
+      width: min(200px, 42vw);
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+
+    .detail-title-block {
+      text-align: center;
+      width: 100%;
+    }
+
+    .detail-title {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .detail-body {
+      padding: 0 20px 48px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .detail-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin: 22px 0 10px;
+    }
+
+    .detail-meta {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      align-items: baseline;
+    }
+
+    .detail-meta-label {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .detail-meta-value {
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .detail-nota {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+    }
+
+    .detail-tmdb {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.55;
+      margin-top: 8px;
+    }
+
+    .detail-assistido-row {
+      margin: 24px 0 8px;
+    }
+
+    .detail-check-large {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .detail-check-large.checked {
+      background: rgba(76, 175, 130, 0.18);
+      border-color: var(--success);
+      color: #b8f0d3;
+    }
+
+    .detail-check-large:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .gallery-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .gallery-btn {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .gallery-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    @media (min-width: 480px) {
+      .gallery-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .gallery-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+    }
+
+    .gallery-item-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.55);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .gallery-item-delete:disabled {
+      opacity: 0.4;
+    }
+
+    .gallery-item-loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-empty {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+
+    .detail-skeleton-hero {
+      height: 220px;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .detail-skeleton-body {
+      padding: 24px 20px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .detail-error {
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .detail-error button {
+      margin-top: 16px;
+    }
+
+    /* Lightbox */
+    .photo-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0, 0, 0, 0.92);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .photo-lightbox.open {
+      display: flex;
+    }
+
+    .photo-lightbox img {
+      max-width: 100%;
+      max-height: 92dvh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .photo-lightbox-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -919,6 +1324,29 @@
   </section>
 
   <main id="lista"></main>
+
+  <div id="detail-view" class="detail-view" aria-hidden="true">
+    <header class="detail-header">
+      <div class="header-top">
+        <button type="button" class="detail-back" id="detail-back" aria-label="Voltar">← Voltar</button>
+        <div class="detail-toolbar-actions">
+          <button type="button" class="detail-icon-btn" id="detail-btn-edit" title="Editar" aria-label="Editar">✏️</button>
+          <button type="button" class="detail-icon-btn" id="detail-btn-delete" title="Remover" aria-label="Remover">🗑</button>
+        </div>
+      </div>
+    </header>
+    <div class="detail-scroll" id="detail-scroll">
+      <div id="detail-inner"></div>
+    </div>
+  </div>
+
+  <div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
+    <button type="button" class="photo-lightbox-close" id="photo-lightbox-close" aria-label="Fechar">✕</button>
+    <img id="photo-lightbox-img" src="" alt="">
+  </div>
+
+  <input type="file" id="input-foto-camera" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" hidden>
+  <input type="file" id="input-foto-galeria" accept="image/jpeg,image/png,image/webp,image/*" hidden>
 
   <button class="fab" id="fab-btn">+</button>
 
@@ -1002,6 +1430,19 @@
 
     const lista = document.getElementById('lista');
     const stats = document.getElementById('stats');
+    const detailView = document.getElementById('detail-view');
+    const detailInner = document.getElementById('detail-inner');
+    const detailBack = document.getElementById('detail-back');
+    const detailBtnEdit = document.getElementById('detail-btn-edit');
+    const detailBtnDelete = document.getElementById('detail-btn-delete');
+    const inputFotoCamera = document.getElementById('input-foto-camera');
+    const inputFotoGaleria = document.getElementById('input-foto-galeria');
+    const photoLightbox = document.getElementById('photo-lightbox');
+    const photoLightboxImg = document.getElementById('photo-lightbox-img');
+    const photoLightboxClose = document.getElementById('photo-lightbox-close');
+
+    let detalheFilmeId = null;
+    let uploadEmProgresso = false;
     const overlay = document.getElementById('overlay');
     const inputTitulo = document.getElementById('input-titulo');
     const inputNota = document.getElementById('input-nota');
@@ -1023,11 +1464,206 @@
       </div>`;
     }
 
+    function detailSkeletonHtml() {
+      return `<div class="detail-skeleton-hero"></div>
+        <div class="detail-skeleton-body">
+          <div class="card-skeleton-line" style="width:70%;height:20px;margin-bottom:16px"></div>
+          <div class="card-skeleton-line" style="width:100%"></div>
+          <div class="card-skeleton-line" style="width:90%"></div>
+          <div class="card-skeleton-line" style="width:60%"></div>
+        </div>`;
+    }
+
+    function abrirPainelDetalhe() {
+      detailView.classList.add('open');
+      detailView.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('detail-open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function fecharPainelDetalhe() {
+      detailView.classList.remove('open');
+      detailView.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('detail-open');
+      document.body.style.overflow = '';
+      detailInner.innerHTML = '';
+    }
+
+    function aplicarRotaHash() {
+      const m = (location.hash || '').match(/^#\/filme\/([^/]+)$/);
+      if (m) {
+        detalheFilmeId = m[1];
+        abrirPainelDetalhe();
+        carregarDetalhe(m[1]);
+      } else {
+        detalheFilmeId = null;
+        fecharPainelDetalhe();
+      }
+    }
+
+    async function carregarDetalhe(id) {
+      detailInner.innerHTML = detailSkeletonHtml();
+      detailBtnEdit.disabled = true;
+      detailBtnDelete.disabled = true;
+      try {
+        const res = await fetch(`/api/filmes/${encodeURIComponent(id)}`);
+        if (!res.ok) throw new Error('nf');
+        const f = await res.json();
+        filmes = filmes.map(x => x.id === f.id ? f : x);
+        renderizarDetalhe(f);
+        detailBtnEdit.disabled = f.assistido;
+        detailBtnDelete.disabled = false;
+      } catch {
+        detailInner.innerHTML = `<div class="detail-error">
+          <div>Não foi possível carregar este item.</div>
+          <button type="button" class="btn-cancel" onclick="location.hash=''">Voltar</button>
+        </div>`;
+      }
+    }
+
+    function setBotoesGaleria(desativar) {
+      document.querySelectorAll('.gallery-btn').forEach(b => { b.disabled = desativar; });
+    }
+
+    function renderizarDetalhe(f) {
+      const fotos = f.fotos || [];
+      const backdrop = f.backdrop_path ? `${TMDB_IMG}/w780${f.backdrop_path}` : '';
+      const poster = f.poster_path ? `${TMDB_IMG}/w342${f.poster_path}` : '';
+      const tipoLabel = f.tipo === 'filme' ? '🎬 Filme' : '📺 Série';
+      const maxFotos = 40;
+      const galeriaCheia = fotos.length >= maxFotos;
+
+      const metaHtml = `
+        <div class="detail-section-title">Informações</div>
+        <div class="detail-meta">
+          <div class="detail-meta-row">
+            <span class="detail-meta-label">Adicionado</span>
+            <span class="detail-meta-value">${formatarData(f.adicionadoEm)}</span>
+          </div>
+          ${f.assistido && f.assistidoEm ? `<div class="detail-meta-row">
+            <span class="detail-meta-label">Assistido em</span>
+            <span class="detail-meta-value">${formatarData(f.assistidoEm)}</span>
+          </div>` : ''}
+          ${f.previsaoEm ? `<div class="detail-meta-row">
+            <span class="detail-meta-label">Previsão</span>
+            <span class="detail-meta-value">${formatarDataLocal(f.previsaoEm)}</span>
+          </div>` : ''}
+          <div class="detail-meta-row">
+            <span class="detail-meta-label">Tipo</span>
+            <span class="detail-meta-value">${tipoLabel}</span>
+          </div>
+          ${f.tmdb_id != null ? `<div class="detail-tmdb">TMDB ID: ${f.tmdb_id}</div>` : ''}
+        </div>`;
+
+      const notaHtml = (f.nota && String(f.nota).trim())
+        ? `<div class="detail-section-title">Observação</div>
+           <div class="detail-meta"><p class="detail-nota">${escapeHtml(f.nota)}</p></div>`
+        : '';
+
+      const fotosGrid = fotos.length
+        ? `<div class="gallery-grid">
+            ${fotos.map(p => `<div class="gallery-item">
+              <img src="${String(p.url).replace(/"/g, '&quot;')}" loading="lazy" decoding="async" alt="">
+              <button type="button" class="gallery-item-delete" data-foto-id="${escapeHtml(p.id)}" aria-label="Remover foto">✕</button>
+            </div>`).join('')}
+          </div>`
+        : `<div class="gallery-empty">Ainda não há fotos deste momento. Adiciona uma pela câmara ou galeria.</div>`;
+
+      detailInner.innerHTML = `
+        <div class="detail-hero-wrap">
+          <div class="detail-hero-bg" ${backdrop ? `style="background-image:url('${backdrop.replace(/'/g, "\\'")}')"` : ''}></div>
+          <div class="detail-hero-content">
+            <div class="detail-poster-wrap">
+              ${poster
+          ? `<img class="detail-poster" src="${poster.replace(/'/g, "\\'")}" alt="" width="342" height="513" loading="eager" decoding="async">`
+          : '<div class="detail-poster-placeholder">🎬</div>'}
+            </div>
+            <div class="detail-title-block">
+              <h1 class="detail-title">${escapeHtml(f.titulo)}</h1>
+              <span class="badge badge-${f.tipo}">${f.tipo === 'filme' ? '🎬' : '📺'} ${f.tipo}</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-body">
+          ${metaHtml}
+          ${notaHtml}
+          <div class="detail-assistido-row">
+            <button type="button" class="detail-check-large ${f.assistido ? 'checked' : ''}" id="detail-check-assistido">
+              ${f.assistido ? '✅ Assistido' : 'Marcar como assistido'}
+            </button>
+          </div>
+          <div class="detail-section-title">Momentos juntos</div>
+          <div class="gallery-actions">
+            <button type="button" class="gallery-btn" id="gallery-btn-camera" ${galeriaCheia ? 'disabled' : ''}>📷 Tirar foto</button>
+            <button type="button" class="gallery-btn" id="gallery-btn-galeria" ${galeriaCheia ? 'disabled' : ''}>🖼 Da galeria</button>
+          </div>
+          ${galeriaCheia ? '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Limite de ' + maxFotos + ' fotos atingido.</p>' : ''}
+          ${fotosGrid}
+        </div>`;
+
+      detailBtnEdit.disabled = f.assistido;
+    }
+
+    async function enviarFotoFicheiro(file) {
+      if (!file || !detalheFilmeId || uploadEmProgresso) return;
+      uploadEmProgresso = true;
+      setBotoesGaleria(true);
+      try {
+        const fd = new FormData();
+        fd.append('foto', file);
+        const res = await fetch(`/api/filmes/${encodeURIComponent(detalheFilmeId)}/fotos`, { method: 'POST', body: fd });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          mostrarToast(errData.error || 'Erro ao enviar foto');
+          return;
+        }
+        const res2 = await fetch(`/api/filmes/${encodeURIComponent(detalheFilmeId)}`);
+        const fresh = await res2.json();
+        filmes = filmes.map(x => x.id === fresh.id ? fresh : x);
+        renderizarDetalhe(fresh);
+        mostrarToast('📷 Foto adicionada');
+      } catch {
+        mostrarToast('Erro ao enviar foto');
+      } finally {
+        uploadEmProgresso = false;
+        setBotoesGaleria(false);
+        inputFotoCamera.value = '';
+        inputFotoGaleria.value = '';
+      }
+    }
+
+    async function removerFoto(fotoId) {
+      if (!detalheFilmeId || !confirm('Remover esta foto?')) return;
+      const res = await fetch(`/api/filmes/${encodeURIComponent(detalheFilmeId)}/fotos/${encodeURIComponent(fotoId)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        mostrarToast('Erro ao remover foto');
+        return;
+      }
+      const res2 = await fetch(`/api/filmes/${encodeURIComponent(detalheFilmeId)}`);
+      const fresh = await res2.json();
+      filmes = filmes.map(x => x.id === fresh.id ? fresh : x);
+      renderizarDetalhe(fresh);
+      mostrarToast('Foto removida');
+    }
+
+    function abrirLightbox(url) {
+      photoLightboxImg.src = url;
+      photoLightbox.classList.add('open');
+      photoLightbox.setAttribute('aria-hidden', 'false');
+    }
+
+    function fecharLightbox() {
+      photoLightbox.classList.remove('open');
+      photoLightbox.setAttribute('aria-hidden', 'true');
+      photoLightboxImg.src = '';
+    }
+
     async function carregar() {
       lista.innerHTML = skeletonCard(true) + skeletonCard(true) + skeletonCard(false);
       const res = await fetch('/api/filmes');
       filmes = await res.json();
       renderizar();
+      aplicarRotaHash();
     }
 
     function renderizar() {
@@ -1069,8 +1705,8 @@
         <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
           ${banner}
           <div class="card-main">
-            ${podeOrdenar ? '<div class="drag-handle">⠿</div>' : '<div class="drag-handle" style="visibility:hidden">⠿</div>'}
-            <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="toggleAssistido('${f.id}')"`}>
+            ${podeOrdenar ? '<div class="drag-handle" onclick="event.stopPropagation()">⠿</div>' : '<div class="drag-handle" style="visibility:hidden" onclick="event.stopPropagation()">⠿</div>'}
+            <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="event.stopPropagation(); toggleAssistido('${f.id}')"`}>
               <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1.5,6 4.5,9 10.5,3"/>
               </svg>
@@ -1086,7 +1722,7 @@
               ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
               <div class="card-footer">
                 <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-                ${soAssistidos ? '<span></span>' : `<div style="display:flex;gap:4px"><button class="edit-btn" onclick="abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="deletar('${f.id}')">🗑</button></div>`}
+                ${soAssistidos ? '<span></span>' : `<div style="display:flex;gap:4px"><button class="edit-btn" onclick="event.stopPropagation(); abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="event.stopPropagation(); deletar('${f.id}')">🗑</button></div>`}
               </div>
             </div>
           </div>
@@ -1139,12 +1775,16 @@
       return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
-    async function toggleAssistido(id) {
+    async function toggleAssistido(id, opts) {
+      const fromDetail = opts && opts.fromDetail;
       const f = filmes.find(x => x.id === id);
       if (!f) return;
       const card = lista.querySelector(`[data-id="${id}"]`);
       const btn = card?.querySelector('.check-btn');
-      if (btn) {
+      const detailBtn = document.getElementById('detail-check-assistido');
+      if (fromDetail && detailBtn) {
+        detailBtn.disabled = true;
+      } else if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="check-spinner"></span>';
       }
@@ -1156,10 +1796,16 @@
         });
         const updated = await res.json();
         filmes = filmes.map(x => x.id === id ? updated : x);
+        if (detalheFilmeId === id) renderizarDetalhe(updated);
         renderizar();
         mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
       } catch {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>'; }
+        if (fromDetail && detailBtn) {
+          detailBtn.disabled = false;
+        } else if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>';
+        }
       }
     }
 
@@ -1168,6 +1814,7 @@
       if (!confirm(`Remover "${f.titulo}" da lista?`)) return;
       await fetch(`/api/filmes/${id}`, { method: 'DELETE' });
       filmes = filmes.filter(x => x.id !== id);
+      if (detalheFilmeId === id) location.hash = '';
       renderizar();
       mostrarToast('🗑 Removido da lista');
     }
@@ -1207,6 +1854,7 @@
         });
         const updated = await res.json();
         filmes = filmes.map(x => x.id === editandoId ? updated : x);
+        if (detalheFilmeId === editandoId) renderizarDetalhe(updated);
         fecharModalEdicao();
         renderizar();
         mostrarToast('✏️ Item atualizado!');
@@ -1484,6 +2132,66 @@
     overlayEdicao.addEventListener('click', e => { if (e.target === overlayEdicao) fecharModalEdicao(); });
 
     inputTitulo.addEventListener('keydown', e => { if (e.key === 'Enter') adicionar(); });
+
+    detailBack.addEventListener('click', () => { location.hash = ''; });
+
+    detailBtnEdit.addEventListener('click', () => {
+      if (detalheFilmeId) abrirModalEdicao(detalheFilmeId);
+    });
+
+    detailBtnDelete.addEventListener('click', () => {
+      if (detalheFilmeId) deletar(detalheFilmeId);
+    });
+
+    detailInner.addEventListener('click', e => {
+      if (e.target.closest('#detail-check-assistido')) {
+        if (detalheFilmeId) toggleAssistido(detalheFilmeId, { fromDetail: true });
+        return;
+      }
+      if (e.target.closest('#gallery-btn-camera')) {
+        const b = document.getElementById('gallery-btn-camera');
+        if (b && !b.disabled) inputFotoCamera.click();
+        return;
+      }
+      if (e.target.closest('#gallery-btn-galeria')) {
+        const b = document.getElementById('gallery-btn-galeria');
+        if (b && !b.disabled) inputFotoGaleria.click();
+        return;
+      }
+      const delBtn = e.target.closest('.gallery-item-delete');
+      if (delBtn && delBtn.dataset.fotoId) {
+        e.preventDefault();
+        removerFoto(delBtn.dataset.fotoId);
+        return;
+      }
+      const img = e.target.closest('.gallery-item img');
+      if (img) abrirLightbox(img.src);
+    });
+
+    inputFotoCamera.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if (file) enviarFotoFicheiro(file);
+    });
+
+    inputFotoGaleria.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if (file) enviarFotoFicheiro(file);
+    });
+
+    photoLightboxClose.addEventListener('click', fecharLightbox);
+    photoLightbox.addEventListener('click', e => {
+      if (e.target === photoLightbox) fecharLightbox();
+    });
+
+    lista.addEventListener('click', e => {
+      const card = e.target.closest('.card');
+      if (!card) return;
+      if (e.target.closest('.check-btn, .drag-handle, .edit-btn, .delete-btn')) return;
+      const id = card.dataset.id;
+      if (id) location.hash = '#/filme/' + id;
+    });
+
+    window.addEventListener('hashchange', aplicarRotaHash);
 
     carregar();
   </script>
