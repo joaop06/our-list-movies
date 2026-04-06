@@ -18,7 +18,19 @@ const ALLOWED_MIME = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
 };
+
+/** Resolve MIME aceite para Multer (inclui .heic/.heif com octet-stream ou MIME vazio). */
+function mimeEfetivo(file) {
+  const m = file.mimetype || '';
+  if (ALLOWED_MIME[m]) return m;
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (ext === '.heic' && (!m || m === 'application/octet-stream')) return 'image/heic';
+  if (ext === '.heif' && (!m || m === 'application/octet-stream')) return 'image/heif';
+  return null;
+}
 
 function normalizeFilme(f) {
   if (!f.fotos || !Array.isArray(f.fotos)) f.fotos = [];
@@ -61,7 +73,8 @@ const storage = multer.diskStorage({
     }
   },
   filename(req, file, cb) {
-    const ext = ALLOWED_MIME[file.mimetype] || '.bin';
+    const mime = mimeEfetivo(file);
+    const ext = mime ? ALLOWED_MIME[mime] : '.bin';
     cb(null, `${crypto.randomUUID()}${ext}`);
   },
 });
@@ -70,7 +83,7 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter(req, file, cb) {
-    if (ALLOWED_MIME[file.mimetype]) cb(null, true);
+    if (mimeEfetivo(file)) cb(null, true);
     else cb(new Error('INVALID_MIME'));
   },
 });
@@ -148,7 +161,7 @@ app.post(
     upload.single('foto')(req, res, err => {
       if (!err) return next();
       if (err.message === 'INVALID_MIME') {
-        return res.status(400).json({ error: 'Tipo de ficheiro não permitido (JPEG, PNG ou WebP)' });
+        return res.status(400).json({ error: 'Tipo de ficheiro não permitido (JPEG, PNG, WebP, HEIC ou HEIF)' });
       }
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'Ficheiro demasiado grande (máx. 8 MB)' });
@@ -158,8 +171,8 @@ app.post(
   },
   (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Nenhum ficheiro enviado' });
-    const mime = req.file.mimetype;
-    if (!ALLOWED_MIME[mime]) {
+    const mime = mimeEfetivo(req.file);
+    if (!mime) {
       try {
         fs.unlinkSync(req.file.path);
       } catch (_) { /* ignore */ }

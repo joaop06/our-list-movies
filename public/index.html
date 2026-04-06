@@ -1092,6 +1092,57 @@
       word-break: break-word;
     }
 
+    .detail-meta-row--status {
+      align-items: center;
+    }
+
+    .detail-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      border: 1px solid transparent;
+      flex-shrink: 0;
+    }
+
+    .detail-status-pill::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .detail-status-pill--sim {
+      background: linear-gradient(145deg, rgba(76, 175, 130, 0.22), rgba(76, 175, 130, 0.1));
+      color: #a8e8c8;
+      border-color: rgba(76, 175, 130, 0.42);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .detail-status-pill--sim::before {
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(76, 175, 130, 0.55);
+    }
+
+    .detail-status-pill--nao {
+      background: linear-gradient(145deg, rgba(100, 100, 120, 0.2), rgba(80, 80, 95, 0.08));
+      color: #b0b0c0;
+      border-color: var(--border);
+    }
+
+    .detail-status-pill--nao::before {
+      background: var(--surface2);
+      border: 2px solid var(--text-muted);
+      box-sizing: border-box;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+    }
+
     .detail-nota {
       font-size: 15px;
       line-height: 1.55;
@@ -1099,11 +1150,35 @@
       white-space: pre-wrap;
     }
 
-    .detail-tmdb {
+    .detail-meta-added {
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .detail-meta-added .detail-meta-row {
       font-size: 11px;
+    }
+
+    .detail-meta-added .detail-meta-label,
+    .detail-meta-added .detail-meta-value {
       color: var(--text-muted);
-      opacity: 0.55;
-      margin-top: 8px;
+      opacity: 0.85;
+    }
+
+    .detail-meta-obs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    .detail-meta-obs .detail-meta-label {
+      align-self: flex-start;
+    }
+
+    .detail-meta-obs .detail-nota {
+      margin: 0;
     }
 
     .detail-assistido-row {
@@ -1132,6 +1207,23 @@
     .detail-check-large:disabled {
       opacity: 0.55;
       cursor: wait;
+    }
+
+    .detail-check-large.checked:disabled {
+      opacity: 1;
+      cursor: default;
+    }
+
+    .detail-btn-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(128, 128, 128, 0.35);
+      border-top-color: var(--text-muted);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
     }
 
     .gallery-actions {
@@ -1345,8 +1437,8 @@
     <img id="photo-lightbox-img" src="" alt="">
   </div>
 
-  <input type="file" id="input-foto-camera" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" hidden>
-  <input type="file" id="input-foto-galeria" accept="image/jpeg,image/png,image/webp,image/*" hidden>
+  <input type="file" id="input-foto-camera" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,image/*" capture="environment" hidden>
+  <input type="file" id="input-foto-galeria" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,image/*" hidden>
 
   <button class="fab" id="fab-btn">+</button>
 
@@ -1529,16 +1621,22 @@
       const fotos = f.fotos || [];
       const backdrop = f.backdrop_path ? `${TMDB_IMG}/w780${f.backdrop_path}` : '';
       const poster = f.poster_path ? `${TMDB_IMG}/w342${f.poster_path}` : '';
-      const tipoLabel = f.tipo === 'filme' ? '🎬 Filme' : '📺 Série';
       const maxFotos = 40;
       const galeriaCheia = fotos.length >= maxFotos;
+      const notaTrim = f.nota && String(f.nota).trim();
+      const notaBlock = notaTrim
+        ? `<div class="detail-meta-obs">
+            <span class="detail-meta-label">Observação</span>
+            <p class="detail-nota">${escapeHtml(notaTrim)}</p>
+          </div>`
+        : '';
 
       const metaHtml = `
         <div class="detail-section-title">Informações</div>
         <div class="detail-meta">
-          <div class="detail-meta-row">
-            <span class="detail-meta-label">Adicionado</span>
-            <span class="detail-meta-value">${formatarData(f.adicionadoEm)}</span>
+          <div class="detail-meta-row detail-meta-row--status">
+            <span class="detail-meta-label">Assistido</span>
+            <span class="detail-meta-value detail-status-pill ${f.assistido ? 'detail-status-pill--sim' : 'detail-status-pill--nao'}" role="status">${f.assistido ? 'Sim' : 'Não'}</span>
           </div>
           ${f.assistido && f.assistidoEm ? `<div class="detail-meta-row">
             <span class="detail-meta-label">Assistido em</span>
@@ -1548,17 +1646,14 @@
             <span class="detail-meta-label">Previsão</span>
             <span class="detail-meta-value">${formatarDataLocal(f.previsaoEm)}</span>
           </div>` : ''}
-          <div class="detail-meta-row">
-            <span class="detail-meta-label">Tipo</span>
-            <span class="detail-meta-value">${tipoLabel}</span>
+          ${notaBlock}
+          <div class="detail-meta-added">
+            <div class="detail-meta-row">
+              <span class="detail-meta-label">Adicionado</span>
+              <span class="detail-meta-value">${formatarData(f.adicionadoEm)}</span>
+            </div>
           </div>
-          ${f.tmdb_id != null ? `<div class="detail-tmdb">TMDB ID: ${f.tmdb_id}</div>` : ''}
         </div>`;
-
-      const notaHtml = (f.nota && String(f.nota).trim())
-        ? `<div class="detail-section-title">Observação</div>
-           <div class="detail-meta"><p class="detail-nota">${escapeHtml(f.nota)}</p></div>`
-        : '';
 
       const fotosGrid = fotos.length
         ? `<div class="gallery-grid">
@@ -1586,9 +1681,8 @@
         </div>
         <div class="detail-body">
           ${metaHtml}
-          ${notaHtml}
           <div class="detail-assistido-row">
-            <button type="button" class="detail-check-large ${f.assistido ? 'checked' : ''}" id="detail-check-assistido">
+            <button type="button" class="detail-check-large ${f.assistido ? 'checked' : ''}" id="detail-check-assistido" ${f.assistido ? 'disabled aria-label="Assistido"' : ''}>
               ${f.assistido ? '✅ Assistido' : 'Marcar como assistido'}
             </button>
           </div>
@@ -1778,12 +1872,16 @@
     async function toggleAssistido(id, opts) {
       const fromDetail = opts && opts.fromDetail;
       const f = filmes.find(x => x.id === id);
-      if (!f) return;
+      if (!f || (fromDetail && f.assistido)) return;
       const card = lista.querySelector(`[data-id="${id}"]`);
       const btn = card?.querySelector('.check-btn');
       const detailBtn = document.getElementById('detail-check-assistido');
+      let detailPrevHtml = null;
       if (fromDetail && detailBtn) {
+        detailPrevHtml = detailBtn.innerHTML;
         detailBtn.disabled = true;
+        detailBtn.setAttribute('aria-busy', 'true');
+        detailBtn.innerHTML = '<span class="detail-btn-spinner" aria-hidden="true"></span>A atualizar...';
       } else if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="check-spinner"></span>';
@@ -1794,6 +1892,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ assistido: !f.assistido }),
         });
+        if (!res.ok) throw new Error('PATCH assistido');
         const updated = await res.json();
         filmes = filmes.map(x => x.id === id ? updated : x);
         if (detalheFilmeId === id) renderizarDetalhe(updated);
@@ -1802,6 +1901,8 @@
       } catch {
         if (fromDetail && detailBtn) {
           detailBtn.disabled = false;
+          detailBtn.removeAttribute('aria-busy');
+          if (detailPrevHtml != null) detailBtn.innerHTML = detailPrevHtml;
         } else if (btn) {
           btn.disabled = false;
           btn.innerHTML = '<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>';
@@ -2145,7 +2246,8 @@
 
     detailInner.addEventListener('click', e => {
       if (e.target.closest('#detail-check-assistido')) {
-        if (detalheFilmeId) toggleAssistido(detalheFilmeId, { fromDetail: true });
+        const cur = filmes.find(x => x.id === detalheFilmeId);
+        if (detalheFilmeId && cur && !cur.assistido) toggleAssistido(detalheFilmeId, { fromDetail: true });
         return;
       }
       if (e.target.closest('#gallery-btn-camera')) {
