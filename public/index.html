@@ -835,14 +835,57 @@
     }
 
     // Tabs
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        filtro = tab.dataset.filtro;
-        renderizar();
+    const tabsOrder = ['pendentes', 'todos', 'assistidos'];
+    let tabTransitioning = false;
+
+    function mudarTab(novoFiltro, direcao) {
+      if (tabTransitioning || novoFiltro === filtro) return;
+      const oldIdx = tabsOrder.indexOf(filtro);
+      const newIdx = tabsOrder.indexOf(novoFiltro);
+      const dir = direcao || (newIdx > oldIdx ? 'left' : 'right');
+
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.filtro === novoFiltro);
       });
+      filtro = novoFiltro;
+      tabTransitioning = true;
+
+      // Sai pelo lado correspondente à direção
+      lista.style.cssText = `transition: opacity 0.14s ease, transform 0.14s ease; opacity: 0; transform: translateX(${dir === 'left' ? '-28px' : '28px'})`;
+
+      setTimeout(() => {
+        renderizar();
+        // Posiciona novo conteúdo no lado oposto, invisível
+        lista.style.cssText = `transition: none; opacity: 0; transform: translateX(${dir === 'left' ? '28px' : '-28px'})`;
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          lista.style.cssText = `transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0)`;
+          setTimeout(() => {
+            lista.style.cssText = '';
+            tabTransitioning = false;
+          }, 200);
+        }));
+      }, 140);
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => mudarTab(tab.dataset.filtro));
     });
+
+    // Swipe entre abas
+    let swipeTouchStartX = null;
+    document.addEventListener('touchstart', e => {
+      swipeTouchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      if (swipeTouchStartX === null) return;
+      const diff = swipeTouchStartX - e.changedTouches[0].clientX;
+      swipeTouchStartX = null;
+      if (Math.abs(diff) < 50) return;
+      const idx = tabsOrder.indexOf(filtro);
+      if (diff > 0 && idx < tabsOrder.length - 1) mudarTab(tabsOrder[idx + 1], 'left');
+      else if (diff < 0 && idx > 0) mudarTab(tabsOrder[idx - 1], 'right');
+    }, { passive: true });
 
     // Tipo buttons
     document.querySelectorAll('.tipo-btn').forEach(btn => {
