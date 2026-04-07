@@ -25,6 +25,18 @@
       --watched: #2a2a38;
       --border: #2e2e42;
       --success: #4caf82;
+      --shell-max: 1200px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: var(--shell-max);
+      margin-inline: auto;
+      padding-inline: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     body {
@@ -39,7 +51,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 16px 20px 12px;
+      padding: 16px 0 12px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -69,11 +81,45 @@
       margin-left: 4px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
     .stats {
       font-size: 12px;
       color: var(--text-muted);
       text-align: right;
       line-height: 1.5;
+    }
+
+    .header-add-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 2px 12px rgba(232, 93, 159, 0.35);
+      transition: opacity 0.15s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .header-add-btn:hover {
+      opacity: 0.92;
+    }
+
+    .header-add-btn:active {
+      transform: scale(0.98);
     }
 
     .tabs {
@@ -103,10 +149,12 @@
 
     main {
       flex: 1;
-      padding: 16px;
+      padding: 16px 0;
+      padding-bottom: calc(16px + 80px);
       display: flex;
       flex-direction: column;
       gap: 10px;
+      min-height: 0;
     }
 
     .empty {
@@ -157,7 +205,10 @@
     /* Banner de imagem do filme/série */
     .card-banner {
       position: relative;
-      height: 130px;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 200px;
+      min-height: 110px;
       overflow: hidden;
       background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
       background-size: 200% 100%;
@@ -322,12 +373,17 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      font-size: 16px;
+      padding: 10px;
+      min-width: 40px;
+      min-height: 40px;
+      border-radius: 10px;
+      font-size: 18px;
       line-height: 1;
-      opacity: 0.5;
+      opacity: 0.65;
       transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .delete-btn:hover {
@@ -340,11 +396,11 @@
       color: var(--accent);
     }
 
-    /* FAB */
+    /* FAB (mobile; desktop usa botão no header) */
     .fab {
       position: fixed;
-      bottom: 24px;
-      right: 20px;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      right: max(20px, env(safe-area-inset-right));
       width: 56px;
       height: 56px;
       border-radius: 50%;
@@ -563,10 +619,20 @@
     /* Hero section */
     .hero {
       position: relative;
+      min-height: 230px;
       height: 230px;
       overflow: hidden;
       display: flex;
+      flex-direction: column;
       flex-shrink: 0;
+    }
+
+    .hero-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
     }
 
     .hero-photos {
@@ -580,6 +646,12 @@
       flex: 1;
       overflow: hidden;
       position: relative;
+      min-width: 0;
+      background: linear-gradient(145deg, var(--surface2), var(--surface));
+    }
+
+    .hero-photo--empty {
+      background: linear-gradient(145deg, var(--surface2), #1a1a28);
     }
 
     .hero-photo img {
@@ -645,15 +717,17 @@
 
     .hero-tagline {
       font-size: 13px;
-      color: rgba(240, 240, 240, 0.75);
+      color: rgba(240, 240, 240, 0.88);
       letter-spacing: 0.3px;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
     }
 
     .hero-hearts {
       font-size: 18px;
       letter-spacing: 6px;
       margin-bottom: 4px;
-      opacity: 0.9;
+      opacity: 0.95;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
     }
 
     /* TMDB autocomplete */
@@ -841,7 +915,9 @@
     }
 
     .card-skeleton-banner {
-      height: 130px;
+      aspect-ratio: 16 / 9;
+      max-height: 200px;
+      min-height: 110px;
       background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.4s ease-in-out infinite;
@@ -912,9 +988,13 @@
       flex-shrink: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 16px 20px 12px;
+      padding: 0;
       position: relative;
       z-index: 101;
+    }
+
+    .detail-header .app-shell {
+      padding: 16px 0 12px;
     }
 
     .detail-header .header-top {
@@ -1012,6 +1092,7 @@
       flex-direction: column;
       align-items: center;
       gap: 16px;
+      width: 100%;
     }
 
     .detail-poster-wrap {
@@ -1381,49 +1462,177 @@
       font-size: 20px;
       cursor: pointer;
     }
+
+    .detail-header-inner {
+      width: 100%;
+    }
+
+    @keyframes modalDesktopIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* ——— Desktop / tablet ——— */
+    @media (min-width: 768px) {
+      .header-add-btn {
+        display: inline-flex;
+      }
+
+      .fab {
+        display: none;
+      }
+
+      main {
+        padding-bottom: 28px;
+      }
+
+      main#lista {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        align-content: start;
+      }
+
+      main#lista > .empty {
+        grid-column: 1 / -1;
+      }
+
+      .titulo {
+        font-size: 16px;
+      }
+
+      .hero {
+        min-height: 280px;
+        height: 280px;
+      }
+
+      .hero-tagline {
+        font-size: 15px;
+      }
+
+      .hero-hearts {
+        font-size: 20px;
+      }
+
+      .overlay.open {
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .overlay.open .modal {
+        border-radius: 20px;
+        max-width: 480px;
+        width: 100%;
+        margin: 0;
+        max-height: min(85dvh, 900px);
+        animation: modalDesktopIn 0.22s ease;
+      }
+
+      .toast {
+        bottom: 28px;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .detail-hero-content {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 32px;
+        padding: 32px 24px 36px;
+        max-width: var(--shell-max);
+        margin-inline: auto;
+      }
+
+      .detail-title-block {
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+        align-self: center;
+      }
+
+      .detail-title {
+        font-size: 26px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .hero {
+        min-height: 320px;
+        height: 320px;
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .detail-body {
+        max-width: 640px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <div class="header-top">
-      <div>
-        <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+  <div class="app-shell">
+    <header>
+      <div class="header-top">
+        <div>
+          <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+        </div>
+        <div class="header-actions">
+          <div class="stats" id="stats"></div>
+          <button type="button" class="header-add-btn" id="header-add-btn" aria-label="Adicionar à lista">+ Adicionar</button>
+        </div>
       </div>
-      <div class="stats" id="stats"></div>
-    </div>
-    <div class="tabs">
-      <button class="tab active" data-filtro="pendentes">Para ver</button>
-      <button class="tab" data-filtro="todos">Todos</button>
-      <button class="tab" data-filtro="assistidos">Assistidos</button>
-    </div>
-  </header>
+      <div class="tabs">
+        <button class="tab active" data-filtro="pendentes">Para ver</button>
+        <button class="tab" data-filtro="todos">Todos</button>
+        <button class="tab" data-filtro="assistidos">Assistidos</button>
+      </div>
+    </header>
 
-  <section class="hero">
-    <div class="hero-photos">
-      <div class="hero-photo"><img src="/images/2.jpeg" alt="Nós"></div>
-      <div class="hero-photo"><img src="/images/3.jpeg" alt="Nós"></div>
-      <div class="hero-photo"><img src="/images/1.jpeg" alt="Nós"></div>
-    </div>
-    <div class="hero-gradient"></div>
-    <div class="hero-side-fade-left"></div>
-    <div class="hero-side-fade-right"></div>
-    <div class="hero-content">
-      <div class="hero-hearts">🎬 ❤️ 🍿</div>
-      <div class="hero-tagline">filmes & séries para assistir juntos</div>
-    </div>
-  </section>
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-photos">
+          <div class="hero-photo"><img src="/images/2.jpeg" alt=""
+              onerror="this.onerror=null;this.style.display='none';this.parentElement.classList.add('hero-photo--empty');"></div>
+          <div class="hero-photo"><img src="/images/3.jpeg" alt=""
+              onerror="this.onerror=null;this.style.display='none';this.parentElement.classList.add('hero-photo--empty');"></div>
+          <div class="hero-photo"><img src="/images/1.jpeg" alt=""
+              onerror="this.onerror=null;this.style.display='none';this.parentElement.classList.add('hero-photo--empty');"></div>
+        </div>
+        <div class="hero-gradient"></div>
+        <div class="hero-side-fade-left"></div>
+        <div class="hero-side-fade-right"></div>
+        <div class="hero-content">
+          <div class="hero-hearts">🎬 ❤️ 🍿</div>
+          <div class="hero-tagline">filmes & séries para assistir juntos</div>
+        </div>
+      </div>
+    </section>
 
-  <main id="lista"></main>
+    <main id="lista"></main>
+  </div>
 
   <div id="detail-view" class="detail-view" aria-hidden="true">
     <header class="detail-header">
-      <div class="header-top">
-        <button type="button" class="detail-back" id="detail-back" aria-label="Voltar">← Voltar</button>
-        <div class="detail-toolbar-actions">
-          <button type="button" class="detail-icon-btn" id="detail-btn-edit" title="Editar" aria-label="Editar">✏️</button>
-          <button type="button" class="detail-icon-btn" id="detail-btn-delete" title="Remover" aria-label="Remover">🗑</button>
+      <div class="app-shell detail-header-inner">
+        <div class="header-top">
+          <button type="button" class="detail-back" id="detail-back" aria-label="Voltar">← Voltar</button>
+          <div class="detail-toolbar-actions">
+            <button type="button" class="detail-icon-btn" id="detail-btn-edit" title="Editar" aria-label="Editar">✏️</button>
+            <button type="button" class="detail-icon-btn" id="detail-btn-delete" title="Remover" aria-label="Remover">🗑</button>
+          </div>
         </div>
       </div>
     </header>
@@ -1825,7 +2034,7 @@
               ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
               <div class="card-footer">
                 <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-                ${soAssistidos || f.assistido ? '<span></span>' : `<div style="display:flex;gap:4px"><button class="edit-btn" onclick="event.stopPropagation(); abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="event.stopPropagation(); deletar('${f.id}')">🗑</button></div>`}
+                ${soAssistidos || f.assistido ? '<span></span>' : `<div style="display:flex;gap:8px;align-items:center"><button class="edit-btn" onclick="event.stopPropagation(); abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="event.stopPropagation(); deletar('${f.id}')">🗑</button></div>`}
               </div>
             </div>
           </div>
@@ -2247,6 +2456,7 @@
 
     // Tipo buttons (edit modal)
     document.getElementById('fab-btn').addEventListener('click', abrirModal);
+    document.getElementById('header-add-btn').addEventListener('click', abrirModal);
     document.getElementById('btn-add').addEventListener('click', adicionar);
     document.getElementById('btn-cancel').addEventListener('click', fecharModal);
     overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });

@@ -7,7 +7,7 @@
 
 Aplicação web para gerir uma **lista partilhada** de filmes e séries: adicionar títulos (com pesquisa na [The Movie Database (TMDB)](https://www.themoviedb.org/)), marcar o que já foi visto, definir previsões e observações, reordenar o que falta ver e guardar **fotos** de “momentos juntos” por título.
 
-Interface **mobile-first**, tema **escuro** com realce em gradiente rosa–roxo, tal como na app.
+Interface **mobile-first** com **layout adaptado a desktop** (grelha de cartões, shell com largura máxima, modais centrados, botão “Adicionar” na barra em ecrãs largos), tema **escuro** com realce em gradiente rosa–roxo, tal como na app.
 
 ---
 
@@ -44,7 +44,7 @@ Interface **mobile-first**, tema **escuro** com realce em gradiente rosa–roxo,
 
 ### Outros
 
-- **FAB** (+) para abrir o modal de adição.
+- **Adicionar**: em ecrãs estreitos, **FAB** (+) no canto inferior direito; em **desktop**, botão **+ Adicionar** no cabeçalho (o FAB oculta-se para evitar sobreposição com as ações dos cartões).
 - **Toasts** para feedback (erros, confirmações).
 - **Skeletons** no carregamento da lista e do detalhe.
 
@@ -58,7 +58,7 @@ Interface **mobile-first**, tema **escuro** com realce em gradiente rosa–roxo,
 | Persistência | Ficheiro JSON no disco |
 | Uploads | [Multer](https://github.com/expressjs/multer) |
 | Configuração | [dotenv](https://github.com/motdotla/dotenv) |
-| Frontend | HTML, CSS e JavaScript num único ficheiro; [SortableJS](https://sortablejs.github.io/Sortable/) (CDN) para reordenação |
+| Frontend | HTML, CSS e JavaScript em [public/index.html](public/index.html); [SortableJS](https://sortablejs.github.io/Sortable/) (CDN) para reordenação |
 | Metadados de filmes | API TMDB (opcional, via chave) |
 
 ---
@@ -196,17 +196,26 @@ filmes/
 ├── public/
 │   ├── index.html      # UI completa (CSS + JS)
 │   ├── favicon.svg
-│   ├── images/         # Imagens opcionais do hero (ex.: 1.jpeg, 2.jpeg, 3.jpeg)
+│   ├── images/         # Hero: 1.jpeg, 2.jpeg, 3.jpeg (criar localmente; ver «Imagens do hero»)
 │   └── uploads/
 │       └── filmes/     # Pastas por id de item (gerado em runtime)
 └── README.md
 ```
 
+Para manutenção futura, o CSS e o JavaScript em [public/index.html](public/index.html) podem ser extraídos para ficheiros separados (por exemplo `public/app.css` e `public/app.js`) sem alterar a API do servidor.
+
 ---
 
 ## Personalização opcional
 
-- **Hero** no topo da página: três imagens em `public/images/` referenciadas no HTML; podes substituir por fotos vossas mantendo os nomes ou ajustando os `src`.
+### Imagens do hero
+
+O bloco decorativo no topo usa três ficheiros servidos como URLs estáticos: **`/images/1.jpeg`**, **`/images/2.jpeg`** e **`/images/3.jpeg`** (ou seja, em **`public/images/`** na raiz do projeto). Se um ficheiro não existir ou falhar ao carregar, essa faixa mostra um gradiente de recurso em vez de ficar preta.
+
+Cria a pasta `public/images/` e coloca as tuas fotos com esses nomes, ou altera os `src` em [public/index.html](public/index.html) na secção `.hero`.
+
+### Outros
+
 - **Favicon**: editar [public/favicon.svg](public/favicon.svg).
 
 ---
