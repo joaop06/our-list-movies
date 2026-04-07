@@ -1,6 +1,6 @@
 # Filmes & Séries · Nossa Lista
 
-[![Nossa Lista](https://img.shields.io/badge/Nossa%20Lista-8A2BE2)](https://filmes.jcoder.com.br)
+## [![](https://img.shields.io/badge/❤️_Acesse_Nossa_Lista-9b5de5)](https://filmes.jcoder.com.br)
 
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
