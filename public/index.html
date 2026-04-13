@@ -151,6 +151,47 @@
       line-height: 1.5;
     }
 
+    .legacy-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #e8e0f0;
+      background: rgba(155, 93, 229, 0.12);
+      border: 1px solid rgba(232, 93, 159, 0.35);
+    }
+
+    .legacy-banner[hidden] {
+      display: none !important;
+    }
+
+    .legacy-banner-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .legacy-banner-dismiss {
+      flex-shrink: 0;
+      padding: 2px 8px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .legacy-banner-dismiss:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
     .header-add-btn {
       display: none;
       align-items: center;
@@ -302,6 +343,15 @@
       background: linear-gradient(to bottom, transparent, var(--watched));
     }
 
+    .card.watching {
+      border-color: rgba(232, 93, 159, 0.45);
+      box-shadow: 0 0 0 1px rgba(155, 93, 229, 0.12);
+    }
+
+    .card.watching .card-banner-fade {
+      background: linear-gradient(to bottom, transparent, rgba(232, 93, 159, 0.08));
+    }
+
     /* Conteúdo principal do card */
     .card-main {
       padding: 12px 16px 14px;
@@ -343,6 +393,18 @@
 
     .check-btn.checked .check-icon {
       opacity: 1;
+    }
+
+    .check-btn.watching {
+      border-color: var(--accent);
+      background: rgba(232, 93, 159, 0.14);
+    }
+
+    .check-watching {
+      font-size: 9px;
+      line-height: 1;
+      color: var(--accent);
+      font-weight: 700;
     }
 
     .card-body {
@@ -1270,6 +1332,17 @@
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
     }
 
+    .detail-status-pill--assistindo {
+      background: linear-gradient(145deg, rgba(232, 93, 159, 0.2), rgba(155, 93, 229, 0.12));
+      color: #e8c4f0;
+      border-color: rgba(232, 93, 159, 0.45);
+    }
+
+    .detail-status-pill--assistindo::before {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 10px rgba(232, 93, 159, 0.45);
+    }
+
     .detail-nota {
       font-size: 15px;
       line-height: 1.55;
@@ -1329,6 +1402,12 @@
       background: rgba(76, 175, 130, 0.18);
       border-color: var(--success);
       color: #b8f0d3;
+    }
+
+    .detail-check-large.watching {
+      background: rgba(232, 93, 159, 0.12);
+      border-color: rgba(232, 93, 159, 0.55);
+      color: #f0d0e8;
     }
 
     .detail-check-large:disabled {
@@ -1845,6 +1924,10 @@
             <button type="button" class="header-add-btn" id="header-add-btn" aria-label="Adicionar à lista">+ Adicionar</button>
           </div>
         </div>
+        <div class="legacy-banner" id="legacy-banner" hidden role="status">
+          <span class="legacy-banner-text" id="legacy-banner-text"></span>
+          <button type="button" class="legacy-banner-dismiss" id="legacy-banner-dismiss" aria-label="Fechar aviso">✕</button>
+        </div>
       </div>
       <div class="header-row-detail">
         <div class="header-top header-top-detail">
@@ -1998,6 +2081,43 @@
 
   <script>
     const TMDB_IMG = 'https://image.tmdb.org/t/p';
+
+    const STATUS = {
+      NAO_ASSISTIDO: 'nao_assistido',
+      ASSISTINDO: 'assistindo',
+      ASSISTIDO: 'assistido',
+    };
+
+    function getStatus(f) {
+      if (f.status === STATUS.ASSISTINDO || f.status === STATUS.ASSISTIDO || f.status === STATUS.NAO_ASSISTIDO) {
+        return f.status;
+      }
+      return f.assistido === true ? STATUS.ASSISTIDO : STATUS.NAO_ASSISTIDO;
+    }
+
+    function proximoStatus(s) {
+      if (s === STATUS.NAO_ASSISTIDO) return STATUS.ASSISTINDO;
+      if (s === STATUS.ASSISTINDO) return STATUS.ASSISTIDO;
+      return STATUS.NAO_ASSISTIDO;
+    }
+
+    function labelEstadoVisionamento(s) {
+      if (s === STATUS.ASSISTIDO) return 'Assistido';
+      if (s === STATUS.ASSISTINDO) return 'A assistir';
+      return 'Não iniciado';
+    }
+
+    function pillClassEstado(s) {
+      if (s === STATUS.ASSISTIDO) return 'detail-status-pill--sim';
+      if (s === STATUS.ASSISTINDO) return 'detail-status-pill--assistindo';
+      return 'detail-status-pill--nao';
+    }
+
+    function textoBotaoAvancarEstado(s) {
+      if (s === STATUS.NAO_ASSISTIDO) return '▶ Marcar como a assistir';
+      if (s === STATUS.ASSISTINDO) return '✅ Marcar como assistido';
+      return '↩️ Repor para não iniciado';
+    }
 
     let filmes = [];
     let filtro = 'pendentes';
@@ -2258,14 +2378,15 @@
           </div>`
         : '';
 
+      const st = getStatus(f);
       const metaHtml = `
         <div class="detail-section-title">Informações</div>
         <div class="detail-meta">
           <div class="detail-meta-row detail-meta-row--status">
-            <span class="detail-meta-label">Assistido</span>
-            <span class="detail-meta-value detail-status-pill ${f.assistido ? 'detail-status-pill--sim' : 'detail-status-pill--nao'}" role="status">${f.assistido ? 'Sim' : 'Não'}</span>
+            <span class="detail-meta-label">Estado</span>
+            <span class="detail-meta-value detail-status-pill ${pillClassEstado(st)}" role="status">${labelEstadoVisionamento(st)}</span>
           </div>
-          ${f.assistido && f.assistidoEm ? `<div class="detail-meta-row">
+          ${st === STATUS.ASSISTIDO && f.assistidoEm ? `<div class="detail-meta-row">
             <span class="detail-meta-label">Assistido em</span>
             <span class="detail-meta-value">${formatarData(f.assistidoEm)}</span>
           </div>` : ''}
@@ -2309,8 +2430,8 @@
         <div class="detail-body">
           ${metaHtml}
           <div class="detail-assistido-row">
-            <button type="button" class="detail-check-large ${f.assistido ? 'checked' : ''}" id="detail-check-assistido" ${f.assistido ? 'disabled aria-label="Assistido"' : ''}>
-              ${f.assistido ? '✅ Assistido' : 'Marcar como assistido'}
+            <button type="button" class="detail-check-large ${st === STATUS.ASSISTIDO ? 'checked' : ''} ${st === STATUS.ASSISTINDO ? 'watching' : ''}" id="detail-check-assistido" aria-label="${textoBotaoAvancarEstado(st)}">
+              ${textoBotaoAvancarEstado(st)}
             </button>
           </div>
           <div class="detail-section-title">Momentos juntos</div>
@@ -2326,7 +2447,7 @@
           ${fotosGrid}
         </div>`;
 
-      setDetailEditDeleteVisible(!f.assistido);
+      setDetailEditDeleteVisible(getStatus(f) !== STATUS.ASSISTIDO);
       detailInner.querySelectorAll('.gallery-item img').forEach(img => {
         if (img.complete && img.naturalWidth > 0) galeriaFotoCarregou(img);
       });
@@ -2602,17 +2723,32 @@
         } catch (_) { /* manter appConfig por defeito */ }
       }
       renderizar();
+      atualizarBannerLegacy();
       aplicarRotaHash();
+    }
+
+    function atualizarBannerLegacy() {
+      const el = document.getElementById('legacy-banner');
+      const textEl = document.getElementById('legacy-banner-text');
+      if (!el || !textEl) return;
+      const n = filmes.filter(f => f.legacyFormat).length;
+      if (n === 0 || sessionStorage.getItem('legacyBannerDismissed') === '1') {
+        el.hidden = true;
+        return;
+      }
+      el.hidden = false;
+      textEl.textContent = `${n} item(ns) ainda estão no formato antigo (sem campo estado). Abra um filme e altere o estado para gravar no novo formato, ou execute o script de migração no servidor.`;
     }
 
     function renderizar() {
       const total = filmes.length;
-      const assistidos = filmes.filter(f => f.assistido).length;
+      const assistidos = filmes.filter(f => getStatus(f) === STATUS.ASSISTIDO).length;
       stats.innerHTML = `${assistidos}/${total} assistidos`;
 
       const filtrados = filmes.filter(f => {
-        if (filtro === 'pendentes') return !f.assistido;
-        if (filtro === 'assistidos') return f.assistido;
+        const st = getStatus(f);
+        if (filtro === 'pendentes') return st !== STATUS.ASSISTIDO;
+        if (filtro === 'assistidos') return st === STATUS.ASSISTIDO;
         return true;
       });
 
@@ -2631,6 +2767,7 @@
       const podeOrdenar = filtro === 'pendentes';
 
       lista.innerHTML = filtrados.map(f => {
+        const st = getStatus(f);
         const banner = f.backdrop_path
           ? `<div class="card-banner">
                <img src="${TMDB_IMG}/w500${f.backdrop_path}" loading="lazy" alt="${escapeHtml(f.titulo)}"
@@ -2640,15 +2777,25 @@
              </div>`
           : '';
 
+        const checkBtnInner = st === STATUS.ASSISTIDO
+          ? `<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1.5,6 4.5,9 10.5,3"/>
+              </svg>`
+          : st === STATUS.ASSISTINDO
+            ? '<span class="check-watching" aria-hidden="true">▶</span>'
+            : `<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1.5,6 4.5,9 10.5,3"/>
+              </svg>`;
+
+        const cardStateClass = [st === STATUS.ASSISTIDO ? 'watched' : '', st === STATUS.ASSISTINDO ? 'watching' : ''].filter(Boolean).join(' ');
+
         return `
-        <div class="card ${f.assistido ? 'watched' : ''}" data-id="${f.id}">
+        <div class="card ${cardStateClass}" data-id="${f.id}">
           ${banner}
           <div class="card-main">
             ${podeOrdenar ? '<div class="drag-handle" onclick="event.stopPropagation()">⠿</div>' : '<div class="drag-handle" style="visibility:hidden" onclick="event.stopPropagation()">⠿</div>'}
-            <button class="check-btn ${f.assistido ? 'checked' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="event.stopPropagation(); toggleAssistido('${f.id}')"`}>
-              <svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="1.5,6 4.5,9 10.5,3"/>
-              </svg>
+            <button class="check-btn ${st === STATUS.ASSISTIDO ? 'checked' : ''} ${st === STATUS.ASSISTINDO ? 'watching' : ''}" ${soAssistidos ? 'disabled style="cursor:default;opacity:0.5"' : `onclick="event.stopPropagation(); avancarStatus('${f.id}')"`}>
+              ${checkBtnInner}
             </button>
             <div class="card-body">
               <div class="card-top">
@@ -2658,9 +2805,9 @@
                 </div>
               </div>
               ${f.nota ? `<div class="nota">${escapeHtml(f.nota)}</div>` : ''}
-              ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
+              ${st !== STATUS.ASSISTIDO && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
               <div class="card-footer">
-                <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
+                <div class="data">${st === STATUS.ASSISTIDO && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
                 <span></span>
               </div>
             </div>
@@ -2714,16 +2861,23 @@
       return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
-    async function toggleAssistido(id, opts) {
+    function mensagemToastMudancaEstado(antes, depois) {
+      if (depois === STATUS.ASSISTINDO && antes === STATUS.NAO_ASSISTIDO) return '▶ Marcado como a assistir';
+      if (depois === STATUS.ASSISTIDO && antes === STATUS.ASSISTINDO) return '✅ Marcado como assistido!';
+      if (depois === STATUS.NAO_ASSISTIDO && antes === STATUS.ASSISTIDO) return '↩️ Reposto na lista';
+      return 'Estado atualizado';
+    }
+
+    async function avancarStatus(id, opts) {
       const fromDetail = opts && opts.fromDetail;
       const f = filmes.find(x => x.id === id);
-      if (!f || (fromDetail && f.assistido)) return;
+      if (!f) return;
+      const antes = getStatus(f);
+      const next = proximoStatus(antes);
       const card = lista.querySelector(`[data-id="${id}"]`);
       const btn = card?.querySelector('.check-btn');
       const detailBtn = document.getElementById('detail-check-assistido');
-      let detailPrevHtml = null;
       if (fromDetail && detailBtn) {
-        detailPrevHtml = detailBtn.innerHTML;
         detailBtn.disabled = true;
         detailBtn.setAttribute('aria-busy', 'true');
         detailBtn.innerHTML = '<span class="detail-btn-spinner" aria-hidden="true"></span>A atualizar...';
@@ -2735,30 +2889,29 @@
         const res = await fetch(`/api/filmes/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ assistido: !f.assistido }),
+          body: JSON.stringify({ status: next }),
         });
-        if (!res.ok) throw new Error('PATCH assistido');
+        if (!res.ok) throw new Error('PATCH status');
         const updated = await res.json();
         filmes = filmes.map(x => x.id === id ? updated : x);
         if (detalheFilmeId === id) renderizarDetalhe(updated);
         renderizar();
-        mostrarToast(updated.assistido ? '✅ Marcado como assistido!' : '↩️ Desmarcado');
+        atualizarBannerLegacy();
+        mostrarToast(mensagemToastMudancaEstado(antes, getStatus(updated)));
       } catch {
-        if (fromDetail && detailBtn) {
-          detailBtn.disabled = false;
-          detailBtn.removeAttribute('aria-busy');
-          if (detailPrevHtml != null) detailBtn.innerHTML = detailPrevHtml;
-        } else if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<svg class="check-icon" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>';
+        renderizar();
+        if (detalheFilmeId === id) {
+          const cur = filmes.find(x => x.id === id);
+          if (cur) renderizarDetalhe(cur);
         }
+        mostrarToast('Erro ao atualizar estado. Tente novamente.');
       }
     }
 
     async function deletar(id) {
       const f = filmes.find(x => x.id === id);
       if (!f) return;
-      if (f.assistido) {
+      if (getStatus(f) === STATUS.ASSISTIDO) {
         mostrarToast('Não é possível remover filmes já assistidos');
         return;
       }
@@ -2784,7 +2937,7 @@
 
     function abrirModalEdicao(id) {
       const f = filmes.find(x => x.id === id);
-      if (!f || f.assistido) return;
+      if (!f || getStatus(f) === STATUS.ASSISTIDO) return;
       editandoId = id;
       document.getElementById('edit-titulo').value = f.titulo;
       document.getElementById('edit-nota').value = f.nota || '';
@@ -2817,6 +2970,7 @@
         if (detalheFilmeId === editandoId) renderizarDetalhe(updated);
         fecharModalEdicao();
         renderizar();
+        atualizarBannerLegacy();
         mostrarToast('✏️ Item atualizado!');
       } catch {
         mostrarToast('Erro ao salvar. Tente novamente.');
@@ -3121,8 +3275,7 @@
       const t = e.target instanceof Element ? e.target : (e.target && e.target.parentElement);
       if (!t) return;
       if (t.closest('#detail-check-assistido')) {
-        const cur = filmes.find(x => x.id === detalheFilmeId);
-        if (detalheFilmeId && cur && !cur.assistido) toggleAssistido(detalheFilmeId, { fromDetail: true });
+        if (detalheFilmeId) avancarStatus(detalheFilmeId, { fromDetail: true });
         return;
       }
       if (t.closest('#gallery-btn-camera')) {
@@ -3188,6 +3341,11 @@
     });
 
     window.addEventListener('hashchange', aplicarRotaHash);
+
+    document.getElementById('legacy-banner-dismiss')?.addEventListener('click', () => {
+      sessionStorage.setItem('legacyBannerDismissed', '1');
+      atualizarBannerLegacy();
+    });
 
     carregar();
   </script>

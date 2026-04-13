@@ -17,6 +17,14 @@ const MAX_FOTOS_PER_FILME = 40;
 /** Lado máximo em px após conversão (encaixa dentro, sem ampliar). */
 const MAX_UPLOAD_DIMENSION = 2048;
 
+/** Estados de visionamento (persistidos em `status`). */
+const STATUS = {
+  NAO_ASSISTIDO: 'nao_assistido',
+  ASSISTINDO: 'assistindo',
+  ASSISTIDO: 'assistido',
+};
+const STATUS_VALUES = new Set(Object.values(STATUS));
+
 /** Serializa uploads por filme para evitar ultrapassar o limite em pedidos paralelos. */
 const fotoUploadQueues = new Map();
 
@@ -67,7 +75,23 @@ function mimeEfetivo(file) {
 
 function normalizeFilme(f) {
   if (!f.fotos || !Array.isArray(f.fotos)) f.fotos = [];
+
+  const tinhaChaveStatus = Object.prototype.hasOwnProperty.call(f, 'status');
+  f.legacyFormat = !tinhaChaveStatus;
+
+  let st = f.status;
+  if (!st || !STATUS_VALUES.has(st)) {
+    st = f.assistido === true ? STATUS.ASSISTIDO : STATUS.NAO_ASSISTIDO;
+  }
+  f.status = st;
   return f;
+}
+
+function sanitizeFilmeForDisk(f) {
+  const o = { ...f };
+  delete o.legacyFormat;
+  delete o.assistido;
+  return o;
 }
 
 function readData() {
@@ -80,7 +104,8 @@ function readData() {
 }
 
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  const cleaned = data.map(sanitizeFilmeForDisk);
+  fs.writeFileSync(DATA_FILE, JSON.stringify(cleaned, null, 2));
 }
 
 function ensureUploadDir(filmeId) {
@@ -183,6 +208,7 @@ function stripImmutableFromPatch(body) {
   delete b.fotos;
   delete b.id;
   delete b.adicionadoEm;
+  delete b.legacyFormat;
   return b;
 }
 
@@ -193,7 +219,7 @@ app.post('/api/filmes', (req, res) => {
     titulo: req.body.titulo,
     tipo: req.body.tipo || 'filme',
     nota: req.body.nota || '',
-    assistido: false,
+    status: STATUS.NAO_ASSISTIDO,
     adicionadoEm: new Date().toISOString(),
     assistidoEm: null,
     previsaoEm: req.body.previsaoEm || null,
@@ -204,21 +230,46 @@ app.post('/api/filmes', (req, res) => {
   };
   data.unshift(novo);
   writeData(data);
-  res.status(201).json(novo);
+  res.status(201).json(normalizeFilme({ ...novo }));
 });
 
 app.patch('/api/filmes/:id', (req, res) => {
   const data = readData();
   const idx = data.findIndex(f => f.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Não encontrado' });
+  const prev = data[idx];
+  const prevStatus = prev.status;
+
   const body = stripImmutableFromPatch(req.body);
-  data[idx] = { ...data[idx], ...body };
-  if (req.body.assistido === true && !data[idx].assistidoEm) {
-    data[idx].assistidoEm = new Date().toISOString();
+  let incomingStatus = body.status;
+  if (incomingStatus === undefined && Object.prototype.hasOwnProperty.call(body, 'assistido')) {
+    incomingStatus = body.assistido ? STATUS.ASSISTIDO : STATUS.NAO_ASSISTIDO;
   }
-  if (req.body.assistido === false) {
-    data[idx].assistidoEm = null;
+  if (incomingStatus !== undefined && !STATUS_VALUES.has(incomingStatus)) {
+    return res.status(400).json({ error: 'status inválido' });
   }
+
+  const merged = { ...prev, ...body };
+  delete merged.legacyFormat;
+  delete merged.assistido;
+
+  if (incomingStatus !== undefined) {
+    merged.status = incomingStatus;
+  }
+
+  normalizeFilme(merged);
+
+  if (merged.status === STATUS.ASSISTIDO) {
+    if (prevStatus !== STATUS.ASSISTIDO) {
+      merged.assistidoEm = new Date().toISOString();
+    } else if (!merged.assistidoEm) {
+      merged.assistidoEm = new Date().toISOString();
+    }
+  } else if (prevStatus === STATUS.ASSISTIDO) {
+    merged.assistidoEm = null;
+  }
+
+  data[idx] = merged;
   writeData(data);
   res.json(data[idx]);
 });
@@ -424,7 +475,7 @@ app.delete('/api/filmes/:id', (req, res) => {
   const data = readData();
   const idx = data.findIndex(f => f.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Não encontrado' });
-  if (data[idx].assistido) {
+  if (data[idx].status === STATUS.ASSISTIDO) {
     return res.status(403).json({ error: 'Não é possível remover filmes já assistidos' });
   }
   data.splice(idx, 1);
