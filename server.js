@@ -28,44 +28,19 @@ function serializarUploadFotos(filmeId, fn) {
 }
 
 /**
- * Formatos de imagem aceites (alinhado com extensões comuns). Ficheiros temporários usam a extensão indicada;
+ * Formatos de imagem aceites (PNG e JPEG). Ficheiros temporários usam a extensão indicada;
  * a saída final é sempre JPEG via Sharp.
  */
 const ALLOWED_MIME = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
-  'image/gif': '.gif',
-  'image/webp': '.webp',
-  'image/bmp': '.bmp',
-  'image/tiff': '.tiff',
-  'image/heic': '.heic',
-  'image/heif': '.heif',
-  'image/avif': '.avif',
-  'image/svg+xml': '.svg',
-  'image/x-icon': '.ico',
-  'image/apng': '.png',
 };
 
 /** Extensão → MIME canónico (quando o browser envia octet-stream ou MIME vazio). */
 const EXT_PARA_MIME = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.jfif': 'image/jpeg',
-  '.jpe': 'image/jpeg',
-  '.pjpeg': 'image/jpeg',
   '.png': 'image/png',
-  '.apng': 'image/apng',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.bmp': 'image/bmp',
-  '.dib': 'image/bmp',
-  '.tif': 'image/tiff',
-  '.tiff': 'image/tiff',
-  '.heic': 'image/heic',
-  '.heif': 'image/heif',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
 };
 
 function normalizarMimeReportado(m) {
@@ -76,8 +51,7 @@ function normalizarMimeReportado(m) {
   return lower;
 }
 
-const MSG_TIPOS_IMAGEM =
-  'Apenas imagens são permitidas (JPEG, PNG, GIF, WebP, BMP, TIFF, HEIC/HEIF, AVIF, SVG, ICO, APNG).';
+const MSG_TIPOS_IMAGEM = 'Apenas ficheiros PNG ou JPEG (.png, .jpg, .jpeg).';
 
 /** Resolve MIME aceite para Multer (MIME conhecido ou extensão + octet-stream / vazio). */
 function mimeEfetivo(file) {
@@ -333,7 +307,7 @@ async function processarUploadFoto(req, res) {
     } catch (_) { /* ignore */ }
     console.error('Erro ao converter foto:', err);
     res.status(400).json({
-      error: 'Não foi possível processar a imagem. Se for HEIC/HEIF, o servidor pode precisar de bibliotecas libheif (Linux) ou tenta enviar JPEG.',
+      error: 'Não foi possível processar a imagem. Verifica que o ficheiro é PNG ou JPEG válido.',
     });
     return;
   }

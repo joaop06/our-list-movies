@@ -1379,6 +1379,8 @@
       justify-content: center;
       line-height: 1;
       z-index: 2;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .gallery-item-delete:disabled {
@@ -1866,8 +1868,8 @@
     </div>
   </div>
 
-  <input type="file" id="input-foto-camera" accept="image/*" capture="environment" hidden>
-  <input type="file" id="input-foto-galeria" accept="image/*" hidden>
+  <input type="file" id="input-foto-camera" accept="image/png,image/jpeg,.png,.jpg,.jpeg" capture="environment" hidden>
+  <input type="file" id="input-foto-galeria" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden>
 
   <button class="fab" id="fab-btn">+</button>
 
@@ -2208,20 +2210,22 @@
     }
 
     /** Alinhado aos tipos aceites no servidor; MIME vazio em alguns mobile — valida extensão. */
-    const EXT_FOTO = /\.(jpe?g|jfif|jpe|pjpeg|png|apng|gif|webp|bmp|dib|tiff?|heic|heif|avif|svg|ico)$/i;
+    const EXT_FOTO_PNG_JPEG = /\.(png|jpe?g)$/i;
 
     function ficheiroAceiteComoImagem(file) {
       if (!file) return false;
       const t = (file.type || '').trim().toLowerCase();
-      if (t && !t.startsWith('image/')) return false;
-      if (t.startsWith('image/')) return true;
-      return EXT_FOTO.test(file.name || '');
+      if (t === 'image/png' || t === 'image/jpeg') return true;
+      if (!t || t === 'application/octet-stream') {
+        return EXT_FOTO_PNG_JPEG.test(file.name || '');
+      }
+      return false;
     }
 
     async function enviarFotoFicheiro(file) {
       if (!file || !detalheFilmeId || uploadEmProgresso) return;
       if (!ficheiroAceiteComoImagem(file)) {
-        mostrarToast('Apenas ficheiros de imagem são permitidos.');
+        mostrarToast('Apenas ficheiros PNG ou JPEG (.png, .jpg, .jpeg).');
         inputFotoCamera.value = '';
         inputFotoGaleria.value = '';
         return;
@@ -2958,28 +2962,39 @@
     });
 
     detailInner.addEventListener('click', e => {
-      if (e.target.closest('#detail-check-assistido')) {
+      // Text nodes não têm .closest(); em alguns browsers o alvo do clique é o nó de texto dentro do botão.
+      const t = e.target instanceof Element ? e.target : (e.target && e.target.parentElement);
+      if (!t) return;
+      if (t.closest('#detail-check-assistido')) {
         const cur = filmes.find(x => x.id === detalheFilmeId);
         if (detalheFilmeId && cur && !cur.assistido) toggleAssistido(detalheFilmeId, { fromDetail: true });
         return;
       }
-      if (e.target.closest('#gallery-btn-camera')) {
+      if (t.closest('#gallery-btn-camera')) {
         const b = document.getElementById('gallery-btn-camera');
         if (b && !b.disabled) inputFotoCamera.click();
         return;
       }
-      if (e.target.closest('#gallery-btn-galeria')) {
+      if (t.closest('#gallery-btn-galeria')) {
         const b = document.getElementById('gallery-btn-galeria');
         if (b && !b.disabled) inputFotoGaleria.click();
         return;
       }
-      const delBtn = e.target.closest('.gallery-item-delete');
-      if (delBtn && delBtn.dataset.fotoId) {
+      const delBtn = t.closest('.gallery-item-delete');
+      if (delBtn) {
+        const fotoId = delBtn.getAttribute('data-foto-id');
+        if (fotoId) {
+          e.preventDefault();
+          e.stopPropagation();
+          removerFoto(fotoId);
+          return;
+        }
+        mostrarToast('Não foi possível identificar a foto');
         e.preventDefault();
-        removerFoto(delBtn.dataset.fotoId);
+        e.stopPropagation();
         return;
       }
-      const gItem = e.target.closest('.gallery-item');
+      const gItem = t.closest('.gallery-item');
       const gImg = gItem && gItem.querySelector('img');
       if (gItem && gImg) {
         const cur = filmes.find(x => x.id === detalheFilmeId);
