@@ -2096,14 +2096,20 @@
      */
     function galeriaFotoErro(img) {
       img.onerror = null;
-      const fail = obterOverlayFalhaGaleria(img);
       const marcarFalhaReal = () => {
         if (img.naturalWidth > 0) {
           galeriaFotoCarregou(img);
           return;
         }
         img.style.display = 'none';
-        if (fail) fail.hidden = false;
+        let el = obterOverlayFalhaGaleria(img);
+        if (!el) {
+          el = document.createElement('span');
+          el.className = 'gallery-item-fail';
+          el.textContent = urlPareceHeicOuHeif(img.src) ? MSG_GALERIA_FALHA_HEIC : MSG_GALERIA_FALHA_GENERIC;
+          img.insertAdjacentElement('afterend', el);
+        }
+        el.hidden = false;
       };
       requestAnimationFrame(() => {
         if (img.naturalWidth > 0) {
@@ -2162,7 +2168,6 @@
         ? `<div class="gallery-grid">
             ${fotos.map((p, gi) => `<div class="gallery-item" data-gallery-index="${gi}">
               <img src="${String(p.url).replace(/"/g, '&quot;')}" loading="eager" decoding="async" alt="" onload="galeriaFotoCarregou(this)" onerror="galeriaFotoErro(this)">
-              <span class="gallery-item-fail" hidden>${escapeHtml(urlPareceHeicOuHeif(p.url) ? MSG_GALERIA_FALHA_HEIC : MSG_GALERIA_FALHA_GENERIC)}</span>
               <button type="button" class="gallery-item-delete" data-foto-id="${escapeHtml(p.id)}" aria-label="Remover foto">✕</button>
             </div>`).join('')}
           </div>`
@@ -2353,24 +2358,43 @@
         img.decoding = 'async';
         img.loading = Math.abs(i - idx0) <= 1 ? 'eager' : 'lazy';
         img.src = url;
-        const errEl = document.createElement('p');
-        errEl.className = 'photo-carousel-slide-error';
-        errEl.hidden = true;
-        errEl.textContent = urlPareceHeicOuHeif(url) ? MSG_CARROSSEL_FALHA_HEIC : MSG_CARROSSEL_FALHA_GENERIC;
-        img.onload = () => { errEl.hidden = true; };
+        const carrosselSlideImagemOk = () => {
+          img.style.removeProperty('display');
+          inner.querySelector('.photo-carousel-slide-error')?.remove();
+        };
+        img.onload = () => { carrosselSlideImagemOk(); };
         img.onerror = () => {
           img.onerror = null;
-          setTimeout(() => {
+          const marcarFalhaReal = () => {
             if (img.naturalWidth > 0) {
-              errEl.hidden = true;
+              carrosselSlideImagemOk();
               return;
             }
+            const srcParaMsg = img.src;
             img.removeAttribute('src');
-            errEl.hidden = false;
-          }, 200);
+            let errEl = inner.querySelector('.photo-carousel-slide-error');
+            if (!errEl) {
+              errEl = document.createElement('p');
+              errEl.className = 'photo-carousel-slide-error';
+              errEl.textContent = urlPareceHeicOuHeif(srcParaMsg) ? MSG_CARROSSEL_FALHA_HEIC : MSG_CARROSSEL_FALHA_GENERIC;
+              inner.appendChild(errEl);
+            }
+          };
+          requestAnimationFrame(() => {
+            if (img.naturalWidth > 0) {
+              carrosselSlideImagemOk();
+              return;
+            }
+            requestAnimationFrame(() => {
+              if (img.naturalWidth > 0) {
+                carrosselSlideImagemOk();
+                return;
+              }
+              setTimeout(marcarFalhaReal, 200);
+            });
+          });
         };
         inner.appendChild(img);
-        inner.appendChild(errEl);
         slide.appendChild(inner);
         photoCarouselViewport.appendChild(slide);
       });
