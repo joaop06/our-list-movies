@@ -26,6 +26,7 @@
       --border: #2e2e42;
       --success: #4caf82;
       --shell-max: 1200px;
+      --app-header-height: 120px;
     }
 
     .app-shell {
@@ -48,20 +49,75 @@
       flex-direction: column;
     }
 
-    header {
+    #app-header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       padding: 16px 0 12px;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 260;
+      width: 100%;
+    }
+
+    #app-header .app-shell {
+      flex: 0 1 auto;
+      min-height: 0;
+    }
+
+    .header-row-detail {
+      display: none;
+    }
+
+    body.detail-open .header-row-list {
+      display: none;
+    }
+
+    body.detail-open .header-row-detail {
+      display: block;
+    }
+
+    body.detail-open .tabs {
+      display: none;
     }
 
     .header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 0;
+    }
+
+    .header-row-list .header-top {
       margin-bottom: 14px;
+    }
+
+    /* 1fr | auto | 1fr: laterais iguais para o título ficar sempre ao centro do header,
+       com ou sem ícones à direita (larguras diferentes nos lados não empurram o logo). */
+    .header-top-detail {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      column-gap: 8px;
+    }
+
+    .header-detail-left {
+      justify-self: start;
+      min-width: 0;
+    }
+
+    .header-top-detail .logo {
+      grid-column: 2;
+      justify-self: center;
+      text-align: center;
+      min-width: 0;
+      max-width: min(100vw - 48px, 100%);
+      white-space: nowrap;
+    }
+
+    .header-top-detail .detail-toolbar-actions {
+      grid-column: 3;
+      justify-self: end;
+      min-width: 0;
     }
 
     .logo {
@@ -1000,7 +1056,10 @@
     .detail-view {
       display: none;
       position: fixed;
-      inset: 0;
+      top: var(--app-header-height);
+      left: 0;
+      right: 0;
+      bottom: 0;
       z-index: 250;
       background: var(--bg);
       flex-direction: column;
@@ -1010,44 +1069,32 @@
       display: flex;
     }
 
-    /* Cabeçalho da vista detalhe: mesma linguagem visual do header principal */
-    .detail-header {
-      flex-shrink: 0;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0;
-      position: relative;
-      z-index: 101;
-    }
-
-    .detail-header .app-shell {
-      padding: 16px 0 12px;
-    }
-
-    .detail-header .header-top {
-      margin-bottom: 0;
-    }
-
     .detail-back {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-      padding: 8px 12px;
-      transition: all 0.15s;
+      padding: 8px 14px;
+      transition: opacity 0.15s, transform 0.15s;
       font-family: inherit;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 2px 12px rgba(232, 93, 159, 0.35);
+      white-space: nowrap;
     }
 
     .detail-back:hover {
-      color: var(--text);
-      border-color: var(--accent);
+      opacity: 0.92;
     }
 
     .detail-back:active {
       opacity: 0.85;
+      transform: scale(0.98);
     }
 
     .detail-toolbar-actions {
@@ -1698,10 +1745,6 @@
       }
     }
 
-    .detail-header-inner {
-      width: 100%;
-    }
-
     @keyframes modalDesktopIn {
       from {
         opacity: 0;
@@ -1818,15 +1861,29 @@
 
 <body>
 
-  <div class="app-shell">
-    <header>
-      <div class="header-top">
-        <div>
-          <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+  <header id="app-header">
+    <div class="app-shell">
+      <div class="header-row-list">
+        <div class="header-top">
+          <div>
+            <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+          </div>
+          <div class="header-actions">
+            <div class="stats" id="stats"></div>
+            <button type="button" class="header-add-btn" id="header-add-btn" aria-label="Adicionar à lista">+ Adicionar</button>
+          </div>
         </div>
-        <div class="header-actions">
-          <div class="stats" id="stats"></div>
-          <button type="button" class="header-add-btn" id="header-add-btn" aria-label="Adicionar à lista">+ Adicionar</button>
+      </div>
+      <div class="header-row-detail">
+        <div class="header-top header-top-detail">
+          <div class="header-detail-left">
+            <button type="button" class="detail-back" id="detail-back" aria-label="Voltar">← Voltar</button>
+          </div>
+          <div class="logo">🎬 Nossa Lista <span>❤️</span></div>
+          <div class="detail-toolbar-actions">
+            <button type="button" class="detail-icon-btn" id="detail-btn-edit" title="Editar" aria-label="Editar">✏️</button>
+            <button type="button" class="detail-icon-btn" id="detail-btn-delete" title="Remover" aria-label="Remover">🗑</button>
+          </div>
         </div>
       </div>
       <div class="tabs">
@@ -1834,8 +1891,10 @@
         <button class="tab" data-filtro="todos">Todos</button>
         <button class="tab" data-filtro="assistidos">Assistidos</button>
       </div>
-    </header>
+    </div>
+  </header>
 
+  <div class="app-shell">
     <section class="hero">
       <div class="hero-inner">
         <div class="hero-photos">
@@ -1860,17 +1919,6 @@
   </div>
 
   <div id="detail-view" class="detail-view" aria-hidden="true">
-    <header class="detail-header">
-      <div class="app-shell detail-header-inner">
-        <div class="header-top">
-          <button type="button" class="detail-back" id="detail-back" aria-label="Voltar">← Voltar</button>
-          <div class="detail-toolbar-actions">
-            <button type="button" class="detail-icon-btn" id="detail-btn-edit" title="Editar" aria-label="Editar">✏️</button>
-            <button type="button" class="detail-icon-btn" id="detail-btn-delete" title="Remover" aria-label="Remover">🗑</button>
-          </div>
-        </div>
-      </div>
-    </header>
     <div class="detail-scroll" id="detail-scroll">
       <div id="detail-inner"></div>
     </div>
@@ -1995,6 +2043,18 @@
     const detailBack = document.getElementById('detail-back');
     const detailBtnEdit = document.getElementById('detail-btn-edit');
     const detailBtnDelete = document.getElementById('detail-btn-delete');
+    const appHeader = document.getElementById('app-header');
+
+    function syncAppHeaderHeight() {
+      if (!appHeader) return;
+      document.documentElement.style.setProperty('--app-header-height', `${appHeader.offsetHeight}px`);
+    }
+
+    syncAppHeaderHeight();
+    if (appHeader && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(syncAppHeaderHeight).observe(appHeader);
+    }
+    window.addEventListener('resize', syncAppHeaderHeight);
 
     function setDetailEditDeleteVisible(visible) {
       detailBtnEdit.hidden = !visible;
@@ -2107,6 +2167,9 @@
       detailView.setAttribute('aria-hidden', 'false');
       document.body.classList.add('detail-open');
       document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        syncAppHeaderHeight();
+      });
     }
 
     function fecharPainelDetalhe() {
@@ -2115,6 +2178,9 @@
       document.body.classList.remove('detail-open');
       document.body.style.overflow = '';
       detailInner.innerHTML = '';
+      requestAnimationFrame(() => {
+        syncAppHeaderHeight();
+      });
     }
 
     function aplicarRotaHash() {
