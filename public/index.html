@@ -1985,6 +1985,7 @@
     let sortable = null;
     let tmdbSelecionado = null;
     let searchTimer = null;
+    let tmdbSearchSeq = 0;
     let tituloAntesDaSeleção = '';
 
     const lista = document.getElementById('lista');
@@ -2881,18 +2882,22 @@
     });
 
     async function buscarTmdb(q) {
+      const seq = ++tmdbSearchSeq;
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
         const results = await res.json();
+        if (seq !== tmdbSearchSeq) return;
         elSearching.style.display = 'none';
         mostrarSugestoes(results.filter(r => r.tipo === tipoSelecionado));
       } catch {
+        if (seq !== tmdbSearchSeq) return;
         elSearching.style.display = 'none';
         elSuggestions.style.display = 'none';
       }
     }
 
     function mostrarSugestoes(results) {
+      if (tmdbSelecionado) return;
       if (!results.length) {
         elSuggestions.style.display = 'none';
         return;
@@ -2921,6 +2926,10 @@
     }
 
     function selecionarTmdb(result) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+      tmdbSearchSeq++;
+      elSearching.style.display = 'none';
       tituloAntesDaSeleção = inputTitulo.value;
       tmdbSelecionado = result;
       inputTitulo.value = result.titulo;
