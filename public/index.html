@@ -436,6 +436,10 @@
       display: flex;
     }
 
+    #overlay-confirm {
+      z-index: 350;
+    }
+
     .modal {
       background: var(--surface2);
       border-radius: 20px 20px 0 0;
@@ -461,6 +465,29 @@
       font-weight: 700;
       margin-bottom: 20px;
       text-align: center;
+    }
+
+    .modal-confirm {
+      padding: 22px 20px 32px;
+    }
+
+    .modal-title-confirm {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-align: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .confirm-message {
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 0 0 18px;
     }
 
     .form-group {
@@ -1938,6 +1965,15 @@
     </div>
   </div>
 
+  <div class="overlay" id="overlay-confirm" aria-hidden="true">
+    <div class="modal modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+      <div class="modal-title modal-title-confirm" id="confirm-dialog-title">Confirmar</div>
+      <p class="confirm-message" id="confirm-message"></p>
+      <button type="button" class="btn-add" id="confirm-ok">Remover</button>
+      <button type="button" class="btn-cancel" id="confirm-cancel">Cancelar</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -1992,6 +2028,49 @@
     /** Valores por defeito; substituídos por GET /api/config quando disponível. */
     let appConfig = { maxFotosPerFilme: 40, maxUploadBytes: 8 * 1024 * 1024 };
     const overlay = document.getElementById('overlay');
+    const overlayConfirm = document.getElementById('overlay-confirm');
+    let confirmResolve = null;
+    let confirmKeydownHandler = null;
+
+    function fecharConfirmOverlay(result) {
+      if (!overlayConfirm || !overlayConfirm.classList.contains('open')) return;
+      overlayConfirm.classList.remove('open');
+      overlayConfirm.setAttribute('aria-hidden', 'true');
+      if (confirmKeydownHandler) {
+        document.removeEventListener('keydown', confirmKeydownHandler);
+        confirmKeydownHandler = null;
+      }
+      const r = confirmResolve;
+      confirmResolve = null;
+      if (r) r(result);
+    }
+
+    function pedirConfirmacao(mensagem, options = {}) {
+      const title = options.title != null ? options.title : 'Confirmar';
+      const okText = options.okText != null ? options.okText : 'Remover';
+      const cancelText = options.cancelText != null ? options.cancelText : 'Cancelar';
+      return new Promise((resolve) => {
+        if (confirmResolve) confirmResolve(false);
+        confirmResolve = resolve;
+        document.getElementById('confirm-dialog-title').textContent = title;
+        document.getElementById('confirm-message').textContent = mensagem;
+        document.getElementById('confirm-ok').textContent = okText;
+        document.getElementById('confirm-cancel').textContent = cancelText;
+        overlayConfirm.classList.add('open');
+        overlayConfirm.setAttribute('aria-hidden', 'false');
+        confirmKeydownHandler = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            fecharConfirmOverlay(false);
+          }
+        };
+        document.addEventListener('keydown', confirmKeydownHandler);
+        requestAnimationFrame(() => {
+          document.getElementById('confirm-cancel').focus();
+        });
+      });
+    }
+
     const inputTitulo = document.getElementById('input-titulo');
     const inputNota = document.getElementById('input-nota');
     const elSuggestions = document.getElementById('tmdb-suggestions');
@@ -2265,7 +2344,8 @@
     }
 
     async function removerFoto(fotoId) {
-      if (!detalheFilmeId || !confirm('Remover esta foto?')) return;
+      if (!detalheFilmeId) return;
+      if (!(await pedirConfirmacao('Remover esta foto?', { title: 'Remover foto?' }))) return;
       const res = await fetch(`/api/filmes/${encodeURIComponent(detalheFilmeId)}/fotos/${encodeURIComponent(fotoId)}`, { method: 'DELETE' });
       if (!res.ok) {
         mostrarToast('Erro ao remover foto');
@@ -2643,7 +2723,7 @@
         mostrarToast('Não é possível remover filmes já assistidos');
         return;
       }
-      if (!confirm(`Remover "${f.titulo}" da lista?`)) return;
+      if (!(await pedirConfirmacao(`Remover "${f.titulo}" da lista?`, { title: 'Remover da lista?' }))) return;
       const res = await fetch(`/api/filmes/${id}`, { method: 'DELETE' });
       if (res.status === 403) {
         const err = await res.json().catch(() => ({}));
@@ -2968,6 +3048,10 @@
     document.getElementById('btn-add').addEventListener('click', adicionar);
     document.getElementById('btn-cancel').addEventListener('click', fecharModal);
     overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
+
+    document.getElementById('confirm-ok').addEventListener('click', () => fecharConfirmOverlay(true));
+    document.getElementById('confirm-cancel').addEventListener('click', () => fecharConfirmOverlay(false));
+    overlayConfirm.addEventListener('click', e => { if (e.target === overlayConfirm) fecharConfirmOverlay(false); });
 
     document.getElementById('btn-salvar-edicao').addEventListener('click', salvarEdicao);
     document.getElementById('btn-cancelar-edicao').addEventListener('click', fecharModalEdicao);
