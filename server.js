@@ -14,22 +14,80 @@ const DATA_FILE = path.join(__dirname, process.env.DATA_FILE || 'data/filmes.jso
 const UPLOAD_ROOT = path.join(__dirname, 'public', 'uploads', 'filmes');
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_FOTOS_PER_FILME = 40;
+/** Lado máximo em px após conversão (encaixa dentro, sem ampliar). */
+const MAX_UPLOAD_DIMENSION = 2048;
 
+/** Serializa uploads por filme para evitar ultrapassar o limite em pedidos paralelos. */
+const fotoUploadQueues = new Map();
+
+function serializarUploadFotos(filmeId, fn) {
+  const prev = fotoUploadQueues.get(filmeId) || Promise.resolve();
+  const result = prev.then(() => fn());
+  fotoUploadQueues.set(filmeId, result.catch(() => {}));
+  return result;
+}
+
+/**
+ * Formatos de imagem aceites (alinhado com extensões comuns). Ficheiros temporários usam a extensão indicada;
+ * a saída final é sempre JPEG via Sharp.
+ */
 const ALLOWED_MIME = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
+  'image/gif': '.gif',
   'image/webp': '.webp',
+  'image/bmp': '.bmp',
+  'image/tiff': '.tiff',
   'image/heic': '.heic',
   'image/heif': '.heif',
+  'image/avif': '.avif',
+  'image/svg+xml': '.svg',
+  'image/x-icon': '.ico',
+  'image/apng': '.png',
 };
 
-/** Resolve MIME aceite para Multer (inclui .heic/.heif com octet-stream ou MIME vazio). */
+/** Extensão → MIME canónico (quando o browser envia octet-stream ou MIME vazio). */
+const EXT_PARA_MIME = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.jfif': 'image/jpeg',
+  '.jpe': 'image/jpeg',
+  '.pjpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.apng': 'image/apng',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.dib': 'image/bmp',
+  '.tif': 'image/tiff',
+  '.tiff': 'image/tiff',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
+  '.avif': 'image/avif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+};
+
+function normalizarMimeReportado(m) {
+  if (!m || typeof m !== 'string') return '';
+  const lower = m.toLowerCase().trim();
+  if (lower === 'image/x-ms-bmp' || lower === 'image/x-bmp') return 'image/bmp';
+  if (lower === 'image/vnd.microsoft.icon') return 'image/x-icon';
+  return lower;
+}
+
+const MSG_TIPOS_IMAGEM =
+  'Apenas imagens são permitidas (JPEG, PNG, GIF, WebP, BMP, TIFF, HEIC/HEIF, AVIF, SVG, ICO, APNG).';
+
+/** Resolve MIME aceite para Multer (MIME conhecido ou extensão + octet-stream / vazio). */
 function mimeEfetivo(file) {
-  const m = file.mimetype || '';
+  const m = normalizarMimeReportado(file.mimetype || '');
   if (ALLOWED_MIME[m]) return m;
   const ext = path.extname(file.originalname || '').toLowerCase();
-  if (ext === '.heic' && (!m || m === 'application/octet-stream')) return 'image/heic';
-  if (ext === '.heif' && (!m || m === 'application/octet-stream')) return 'image/heif';
+  const porExt = EXT_PARA_MIME[ext];
+  if (porExt && ALLOWED_MIME[porExt] && (!m || m === 'application/octet-stream')) {
+    return porExt;
+  }
   return null;
 }
 
@@ -64,12 +122,37 @@ function removeUploadDir(filmeId) {
   }
 }
 
+/**
+ * Resolve o caminho absoluto no disco para uma foto, apenas se estiver dentro de
+ * UPLOAD_ROOT/<filmeId>/ (evita path traversal se filmes.json for editado à mão).
+ */
+function diskPathSeguroParaFoto(filmeId, url) {
+  if (!url || typeof url !== 'string') return null;
+  const rel = url.replace(/^\/uploads\/filmes\//, '').replace(/\\/g, '/');
+  if (!rel || rel.includes('..')) return null;
+  const parts = rel.split('/').filter(Boolean);
+  if (parts.length < 2 || parts[0] !== filmeId) return null;
+  const diskPath = path.join(UPLOAD_ROOT, ...parts);
+  const resolved = path.resolve(diskPath);
+  const allowedRoot = path.resolve(path.join(UPLOAD_ROOT, filmeId));
+  if (resolved === allowedRoot) return null;
+  const sep = path.sep;
+  if (!resolved.startsWith(allowedRoot + sep)) return null;
+  return resolved;
+}
+
 /** Converte qualquer imagem aceite para JPEG (navegadores exibem de forma fiável; HEIC/HEIF deixa de depender do cliente). */
 async function converterUploadParaJpeg(caminhoOrigem, pastaDestino) {
   const nomeFicheiro = `${crypto.randomUUID()}.jpg`;
   const caminhoDestino = path.join(pastaDestino, nomeFicheiro);
   await sharp(caminhoOrigem)
     .rotate()
+    .resize({
+      width: MAX_UPLOAD_DIMENSION,
+      height: MAX_UPLOAD_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .jpeg({ quality: 88, mozjpeg: true })
     .toFile(caminhoDestino);
   return { nomeFicheiro, caminhoDestino };
@@ -101,6 +184,14 @@ const upload = multer({
 });
 
 app.use(express.json());
+
+app.get('/api/config', (req, res) => {
+  res.json({
+    maxFotosPerFilme: MAX_FOTOS_PER_FILME,
+    maxUploadBytes: MAX_FILE_SIZE,
+    maxUploadDimension: MAX_UPLOAD_DIMENSION,
+  });
+});
 
 app.get('/api/filmes', (req, res) => {
   res.json(readData());
@@ -158,76 +249,124 @@ app.patch('/api/filmes/:id', (req, res) => {
   res.json(data[idx]);
 });
 
-app.post(
-  '/api/filmes/:id/fotos',
-  (req, res, next) => {
-    const data = readData();
-    const f = data.find(x => x.id === req.params.id);
-    if (!f) return res.status(404).json({ error: 'Não encontrado' });
-    if ((f.fotos || []).length >= MAX_FOTOS_PER_FILME) {
-      return res.status(400).json({ error: 'Limite de fotos atingido' });
-    }
-    next();
-  },
-  (req, res, next) => {
-    upload.single('foto')(req, res, err => {
-      if (!err) return next();
-      if (err.message === 'INVALID_MIME') {
-        return res.status(400).json({ error: 'Tipo de ficheiro não permitido (JPEG, PNG, WebP, HEIC ou HEIF)' });
-      }
-      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Ficheiro demasiado grande (máx. 8 MB)' });
-      }
-      return res.status(400).json({ error: 'Erro no upload' });
-    });
-  },
-  async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Nenhum ficheiro enviado' });
-    const mime = mimeEfetivo(req.file);
-    if (!mime) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (_) { /* ignore */ }
-      return res.status(400).json({ error: 'Tipo de ficheiro não permitido' });
-    }
+function tamanhoMaxUploadMb() {
+  return Math.round(MAX_FILE_SIZE / (1024 * 1024));
+}
 
-    const data = readData();
-    const idx = data.findIndex(x => x.id === req.params.id);
-    if (idx === -1) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (_) { /* ignore */ }
-      return res.status(404).json({ error: 'Não encontrado' });
-    }
+app.post('/api/filmes/:id/fotos', (req, res, next) => {
+  const filmeId = req.params.id;
+  serializarUploadFotos(filmeId, () => processarUploadFoto(req, res))
+    .catch(err => next(err));
+});
 
-    const pasta = path.dirname(req.file.path);
-    let nomeFinal;
-    try {
-      const { nomeFicheiro } = await converterUploadParaJpeg(req.file.path, pasta);
-      nomeFinal = nomeFicheiro;
-    } catch (err) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (_) { /* ignore */ }
-      console.error('Erro ao converter foto:', err);
-      return res.status(400).json({
-        error: 'Não foi possível processar a imagem. Se for HEIC/HEIF, o servidor pode precisar de bibliotecas libheif (Linux) ou tenta enviar JPEG.',
+async function processarUploadFoto(req, res) {
+  const data = readData();
+  const f = data.find(x => x.id === req.params.id);
+  if (!f) {
+    res.status(404).json({ error: 'Não encontrado' });
+    return;
+  }
+  if ((f.fotos || []).length >= MAX_FOTOS_PER_FILME) {
+    res.status(400).json({ error: 'Limite de fotos atingido' });
+    return;
+  }
+
+  try {
+    await new Promise((resolve, reject) => {
+      upload.single('foto')(req, res, err => {
+        if (err) reject(err);
+        else resolve();
       });
+    });
+  } catch (err) {
+    if (err && err.message === 'INVALID_MIME') {
+      res.status(400).json({ error: MSG_TIPOS_IMAGEM });
+      return;
     }
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({ error: `Ficheiro demasiado grande (máx. ${tamanhoMaxUploadMb()} MB)` });
+      return;
+    }
+    res.status(400).json({ error: 'Erro no upload' });
+    return;
+  }
 
+  if (!req.file) {
+    res.status(400).json({ error: 'Nenhum ficheiro enviado' });
+    return;
+  }
+  const mime = mimeEfetivo(req.file);
+  if (!mime) {
     try {
       fs.unlinkSync(req.file.path);
     } catch (_) { /* ignore */ }
+    res.status(400).json({ error: MSG_TIPOS_IMAGEM });
+    return;
+  }
 
-    const fotoId = crypto.randomUUID();
-    const url = `/uploads/filmes/${req.params.id}/${nomeFinal}`;
-    const entry = { id: fotoId, url, createdAt: new Date().toISOString() };
-    data[idx].fotos = data[idx].fotos || [];
-    data[idx].fotos.unshift(entry);
-    writeData(data);
-    res.status(201).json(entry);
-  },
-);
+  const data2 = readData();
+  const idx = data2.findIndex(x => x.id === req.params.id);
+  if (idx === -1) {
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (_) { /* ignore */ }
+    res.status(404).json({ error: 'Não encontrado' });
+    return;
+  }
+
+  if ((data2[idx].fotos || []).length >= MAX_FOTOS_PER_FILME) {
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (_) { /* ignore */ }
+    res.status(400).json({ error: 'Limite de fotos atingido' });
+    return;
+  }
+
+  const pasta = path.dirname(req.file.path);
+  let nomeFinal;
+  try {
+    const { nomeFicheiro } = await converterUploadParaJpeg(req.file.path, pasta);
+    nomeFinal = nomeFicheiro;
+  } catch (err) {
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (_) { /* ignore */ }
+    console.error('Erro ao converter foto:', err);
+    res.status(400).json({
+      error: 'Não foi possível processar a imagem. Se for HEIC/HEIF, o servidor pode precisar de bibliotecas libheif (Linux) ou tenta enviar JPEG.',
+    });
+    return;
+  }
+
+  try {
+    fs.unlinkSync(req.file.path);
+  } catch (_) { /* ignore */ }
+
+  const data3 = readData();
+  const idx3 = data3.findIndex(x => x.id === req.params.id);
+  if (idx3 === -1) {
+    try {
+      fs.unlinkSync(path.join(pasta, nomeFinal));
+    } catch (_) { /* ignore */ }
+    res.status(404).json({ error: 'Não encontrado' });
+    return;
+  }
+  if ((data3[idx3].fotos || []).length >= MAX_FOTOS_PER_FILME) {
+    try {
+      fs.unlinkSync(path.join(pasta, nomeFinal));
+    } catch (_) { /* ignore */ }
+    res.status(400).json({ error: 'Limite de fotos atingido' });
+    return;
+  }
+
+  const fotoId = crypto.randomUUID();
+  const url = `/uploads/filmes/${req.params.id}/${nomeFinal}`;
+  const entry = { id: fotoId, url, createdAt: new Date().toISOString() };
+  data3[idx3].fotos = data3[idx3].fotos || [];
+  data3[idx3].fotos.unshift(entry);
+  writeData(data3);
+  res.status(201).json(entry);
+}
 
 app.delete('/api/filmes/:id/fotos/:fotoId', (req, res) => {
   const data = readData();
@@ -241,11 +380,16 @@ app.delete('/api/filmes/:id/fotos/:fotoId', (req, res) => {
   const [removed] = fotos.splice(fi, 1);
   data[idx].fotos = fotos;
 
-  const rel = removed.url.replace(/^\/uploads\/filmes\//, '');
-  const diskPath = path.join(__dirname, 'public', 'uploads', 'filmes', rel);
-  try {
-    if (fs.existsSync(diskPath)) fs.unlinkSync(diskPath);
-  } catch (_) { /* ignore */ }
+  const diskPath = diskPathSeguroParaFoto(req.params.id, removed.url);
+  if (diskPath) {
+    try {
+      if (fs.existsSync(diskPath)) fs.unlinkSync(diskPath);
+    } catch (e) {
+      console.warn('Falha ao apagar ficheiro de foto:', diskPath, e && e.message ? e.message : e);
+    }
+  } else if (removed.url) {
+    console.warn('URL de foto inválida ou insegura (ficheiro não removido do disco):', removed.url);
+  }
 
   writeData(data);
   res.status(204).end();

@@ -14,10 +14,18 @@ const sharp = require('sharp');
 const root = path.join(__dirname, '..');
 const DATA_FILE = path.join(root, process.env.DATA_FILE || 'data/filmes.json');
 const PUBLIC_UPLOADS = path.join(root, 'public', 'uploads', 'filmes');
+/** Alinhar com server.js (MAX_UPLOAD_DIMENSION). */
+const MAX_DIMENSION = 2048;
 
 async function converterParaJpeg(caminhoOrigem, caminhoDestino) {
   await sharp(caminhoOrigem)
     .rotate()
+    .resize({
+      width: MAX_DIMENSION,
+      height: MAX_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .jpeg({ quality: 88, mozjpeg: true })
     .toFile(caminhoDestino);
 }

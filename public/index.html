@@ -1400,13 +1400,21 @@
       z-index: 1;
     }
 
-    .gallery-item-loading {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
+    .gallery-upload-status {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .gallery-upload-status[hidden] {
+      display: none !important;
     }
 
     .gallery-empty {
@@ -1858,8 +1866,8 @@
     </div>
   </div>
 
-  <input type="file" id="input-foto-camera" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,image/*" capture="environment" hidden>
-  <input type="file" id="input-foto-galeria" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,image/*" hidden>
+  <input type="file" id="input-foto-camera" accept="image/*" capture="environment" hidden>
+  <input type="file" id="input-foto-galeria" accept="image/*" hidden>
 
   <button class="fab" id="fab-btn">+</button>
 
@@ -1979,6 +1987,8 @@
 
     let detalheFilmeId = null;
     let uploadEmProgresso = false;
+    /** Valores por defeito; substituídos por GET /api/config quando disponível. */
+    let appConfig = { maxFotosPerFilme: 40, maxUploadBytes: 8 * 1024 * 1024 };
     const overlay = document.getElementById('overlay');
     const inputTitulo = document.getElementById('input-titulo');
     const inputNota = document.getElementById('input-nota');
@@ -2058,6 +2068,15 @@
       document.querySelectorAll('.gallery-btn').forEach(b => { b.disabled = desativar; });
     }
 
+    function urlPareceHeicOuHeif(url) {
+      return /\.(heic|heif)(\?|#|$)/i.test(String(url || ''));
+    }
+
+    const MSG_GALERIA_FALHA_HEIC = 'HEIC/HEIF: este navegador não mostra este formato. No servidor, instala libheif (ex.: libheif1 no Ubuntu) e corre npm run migrate-fotos-heic para converter para JPEG.';
+    const MSG_GALERIA_FALHA_GENERIC = 'Não foi possível carregar a imagem.';
+    const MSG_CARROSSEL_FALHA_HEIC = 'HEIC/HEIF: este navegador não mostra este formato. No servidor, instala libheif e corre npm run migrate-fotos-heic para converter para JPEG.';
+    const MSG_CARROSSEL_FALHA_GENERIC = 'Não foi possível mostrar esta imagem.';
+
     function obterOverlayFalhaGaleria(img) {
       return img.closest('.gallery-item')?.querySelector('.gallery-item-fail') ?? null;
     }
@@ -2103,7 +2122,7 @@
       const fotos = f.fotos || [];
       const backdrop = f.backdrop_path ? `${TMDB_IMG}/w780${f.backdrop_path}` : '';
       const poster = f.poster_path ? `${TMDB_IMG}/w342${f.poster_path}` : '';
-      const maxFotos = 40;
+      const maxFotos = appConfig.maxFotosPerFilme;
       const galeriaCheia = fotos.length >= maxFotos;
       const notaTrim = f.nota && String(f.nota).trim();
       const notaBlock = notaTrim
@@ -2141,7 +2160,7 @@
         ? `<div class="gallery-grid">
             ${fotos.map((p, gi) => `<div class="gallery-item" data-gallery-index="${gi}">
               <img src="${String(p.url).replace(/"/g, '&quot;')}" loading="eager" decoding="async" alt="" onload="galeriaFotoCarregou(this)" onerror="galeriaFotoErro(this)">
-              <span class="gallery-item-fail" hidden>Não foi possível carregar a imagem.</span>
+              <span class="gallery-item-fail" hidden>${escapeHtml(urlPareceHeicOuHeif(p.url) ? MSG_GALERIA_FALHA_HEIC : MSG_GALERIA_FALHA_GENERIC)}</span>
               <button type="button" class="gallery-item-delete" data-foto-id="${escapeHtml(p.id)}" aria-label="Remover foto">✕</button>
             </div>`).join('')}
           </div>`
@@ -2174,6 +2193,10 @@
             <button type="button" class="gallery-btn" id="gallery-btn-camera" ${galeriaCheia ? 'disabled' : ''}>📷 Tirar foto</button>
             <button type="button" class="gallery-btn" id="gallery-btn-galeria" ${galeriaCheia ? 'disabled' : ''}>🖼 Da galeria</button>
           </div>
+          <div class="gallery-upload-status" id="gallery-upload-status" hidden role="status" aria-live="polite">
+            <span class="detail-btn-spinner" aria-hidden="true"></span>
+            <span>A enviar fotografia…</span>
+          </div>
           ${galeriaCheia ? '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Limite de ' + maxFotos + ' fotos atingido.</p>' : ''}
           ${fotosGrid}
         </div>`;
@@ -2184,10 +2207,29 @@
       });
     }
 
+    /** Alinhado aos tipos aceites no servidor; MIME vazio em alguns mobile — valida extensão. */
+    const EXT_FOTO = /\.(jpe?g|jfif|jpe|pjpeg|png|apng|gif|webp|bmp|dib|tiff?|heic|heif|avif|svg|ico)$/i;
+
+    function ficheiroAceiteComoImagem(file) {
+      if (!file) return false;
+      const t = (file.type || '').trim().toLowerCase();
+      if (t && !t.startsWith('image/')) return false;
+      if (t.startsWith('image/')) return true;
+      return EXT_FOTO.test(file.name || '');
+    }
+
     async function enviarFotoFicheiro(file) {
       if (!file || !detalheFilmeId || uploadEmProgresso) return;
+      if (!ficheiroAceiteComoImagem(file)) {
+        mostrarToast('Apenas ficheiros de imagem são permitidos.');
+        inputFotoCamera.value = '';
+        inputFotoGaleria.value = '';
+        return;
+      }
       uploadEmProgresso = true;
       setBotoesGaleria(true);
+      const uploadStatusEl = document.getElementById('gallery-upload-status');
+      if (uploadStatusEl) uploadStatusEl.hidden = false;
       try {
         const fd = new FormData();
         fd.append('foto', file);
@@ -2207,6 +2249,7 @@
       } finally {
         uploadEmProgresso = false;
         setBotoesGaleria(false);
+        if (uploadStatusEl) uploadStatusEl.hidden = true;
         inputFotoCamera.value = '';
         inputFotoGaleria.value = '';
       }
@@ -2309,7 +2352,7 @@
         const errEl = document.createElement('p');
         errEl.className = 'photo-carousel-slide-error';
         errEl.hidden = true;
-        errEl.textContent = 'Não foi possível mostrar esta imagem.';
+        errEl.textContent = urlPareceHeicOuHeif(url) ? MSG_CARROSSEL_FALHA_HEIC : MSG_CARROSSEL_FALHA_GENERIC;
         img.onload = () => { errEl.hidden = true; };
         img.onerror = () => {
           img.onerror = null;
@@ -2395,8 +2438,22 @@
 
     async function carregar() {
       lista.innerHTML = skeletonCard(true) + skeletonCard(true) + skeletonCard(false);
-      const res = await fetch('/api/filmes');
-      filmes = await res.json();
+      const [resFilmes, resCfg] = await Promise.all([
+        fetch('/api/filmes'),
+        fetch('/api/config'),
+      ]);
+      filmes = await resFilmes.json();
+      if (resCfg.ok) {
+        try {
+          const j = await resCfg.json();
+          if (typeof j.maxFotosPerFilme === 'number' && j.maxFotosPerFilme > 0) {
+            appConfig.maxFotosPerFilme = j.maxFotosPerFilme;
+          }
+          if (typeof j.maxUploadBytes === 'number' && j.maxUploadBytes > 0) {
+            appConfig.maxUploadBytes = j.maxUploadBytes;
+          }
+        } catch (_) { /* manter appConfig por defeito */ }
+      }
       renderizar();
       aplicarRotaHash();
     }

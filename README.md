@@ -35,7 +35,7 @@ Interface **mobile-first** com **layout adaptado a desktop** (grelha de cartões
 - **Poster**, fundo com *backdrop*, título e tipo.
 - Secção **Informações**: estado assistido, datas, previsão, observação, data de adição.
 - Botão grande **Marcar como assistido** (com estado de carregamento).
-- **Momentos juntos**: galeria de fotos (câmara ou galeria), até **40 fotos** por título, ficheiros até **8 MB**, formatos de entrada **JPEG, PNG, WebP, HEIC e HEIF**. No servidor, cada ficheiro é **normalizado para JPEG** (com [sharp](https://sharp.pixelplumbing.com/)) para compatibilidade com o navegador; orientação EXIF é respeitada (`rotate()`).
+- **Momentos juntos**: galeria de fotos (câmara ou galeria), até **40 fotos** por título, ficheiros até **8 MB**, apenas **imagens** (JPEG, PNG, GIF, WebP, BMP, TIFF, HEIC/HEIF, AVIF, SVG, ICO, APNG e extensões afins). No servidor, cada ficheiro é **normalizado para JPEG** (com [sharp](https://sharp.pixelplumbing.com/)) para compatibilidade com o navegador; orientação EXIF é respeitada (`rotate()`).
 - Toque numa foto abre **lightbox**; botão para remover foto.
 - **Editar** e **eliminar** o item só se **não** estiver assistido.
 
@@ -117,6 +117,12 @@ npm run migrate-fotos-heic
 O script converte ficheiros existentes em `public/uploads/filmes/`, atualiza as `url` no JSON e remove os originais. Usa o mesmo `DATA_FILE` que o servidor (variável de ambiente).
 
 Em **Linux**, se a conversão de HEIC falhar, o `libvips` do sharp pode precisar de suporte HEIF no sistema (por exemplo pacotes `libheif1` / `libvips`; ver [documentação do sharp](https://sharp.pixelplumbing.com/install)).
+
+Exemplo em **Ubuntu / Debian** (executar no servidor antes da migração ou dos uploads HEIC):
+
+```bash
+sudo apt-get update && sudo apt-get install -y libheif1
+```
 
 ---
 
