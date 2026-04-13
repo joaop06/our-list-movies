@@ -424,34 +424,6 @@
       color: var(--text-muted);
     }
 
-    .delete-btn, .edit-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 10px;
-      min-width: 40px;
-      min-height: 40px;
-      border-radius: 10px;
-      font-size: 18px;
-      line-height: 1;
-      opacity: 0.65;
-      transition: all 0.15s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .delete-btn:hover {
-      opacity: 1;
-      color: #e05;
-    }
-
-    .edit-btn:hover {
-      opacity: 1;
-      color: var(--accent);
-    }
-
     /* FAB (mobile; desktop usa botão no header) */
     .fab {
       position: fixed;
@@ -2689,7 +2661,7 @@
               ${!f.assistido && f.previsaoEm ? `<div class="previsao">🗓 Previsão: ${formatarDataLocal(f.previsaoEm)}</div>` : ''}
               <div class="card-footer">
                 <div class="data">${f.assistido && f.assistidoEm ? '✅ ' + formatarData(f.assistidoEm) : '📅 ' + formatarData(f.adicionadoEm)}</div>
-                ${soAssistidos || f.assistido ? '<span></span>' : `<div style="display:flex;gap:8px;align-items:center"><button class="edit-btn" onclick="event.stopPropagation(); abrirModalEdicao('${f.id}')">✏️</button><button class="delete-btn" onclick="event.stopPropagation(); deletar('${f.id}')">🗑</button></div>`}
+                <span></span>
               </div>
             </div>
           </div>
@@ -3210,7 +3182,7 @@
     lista.addEventListener('click', e => {
       const card = e.target.closest('.card');
       if (!card) return;
-      if (e.target.closest('.check-btn, .drag-handle, .edit-btn, .delete-btn')) return;
+      if (e.target.closest('.check-btn, .drag-handle')) return;
       const id = card.dataset.id;
       if (id) location.hash = '#/filme/' + id;
     });
