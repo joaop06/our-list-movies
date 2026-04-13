@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
+const sharp = require('sharp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,6 +62,17 @@ function removeUploadDir(filmeId) {
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+}
+
+/** Converte qualquer imagem aceite para JPEG (navegadores exibem de forma fiável; HEIC/HEIF deixa de depender do cliente). */
+async function converterUploadParaJpeg(caminhoOrigem, pastaDestino) {
+  const nomeFicheiro = `${crypto.randomUUID()}.jpg`;
+  const caminhoDestino = path.join(pastaDestino, nomeFicheiro);
+  await sharp(caminhoOrigem)
+    .rotate()
+    .jpeg({ quality: 88, mozjpeg: true })
+    .toFile(caminhoDestino);
+  return { nomeFicheiro, caminhoDestino };
 }
 
 const storage = multer.diskStorage({
@@ -169,7 +181,7 @@ app.post(
       return res.status(400).json({ error: 'Erro no upload' });
     });
   },
-  (req, res) => {
+  async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Nenhum ficheiro enviado' });
     const mime = mimeEfetivo(req.file);
     if (!mime) {
@@ -188,9 +200,27 @@ app.post(
       return res.status(404).json({ error: 'Não encontrado' });
     }
 
+    const pasta = path.dirname(req.file.path);
+    let nomeFinal;
+    try {
+      const { nomeFicheiro } = await converterUploadParaJpeg(req.file.path, pasta);
+      nomeFinal = nomeFicheiro;
+    } catch (err) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (_) { /* ignore */ }
+      console.error('Erro ao converter foto:', err);
+      return res.status(400).json({
+        error: 'Não foi possível processar a imagem. Se for HEIC/HEIF, o servidor pode precisar de bibliotecas libheif (Linux) ou tenta enviar JPEG.',
+      });
+    }
+
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (_) { /* ignore */ }
+
     const fotoId = crypto.randomUUID();
-    const fileName = path.basename(req.file.filename);
-    const url = `/uploads/filmes/${req.params.id}/${fileName}`;
+    const url = `/uploads/filmes/${req.params.id}/${nomeFinal}`;
     const entry = { id: fotoId, url, createdAt: new Date().toISOString() };
     data[idx].fotos = data[idx].fotos || [];
     data[idx].fotos.unshift(entry);

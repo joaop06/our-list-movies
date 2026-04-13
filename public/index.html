@@ -1378,10 +1378,26 @@
       align-items: center;
       justify-content: center;
       line-height: 1;
+      z-index: 2;
     }
 
     .gallery-item-delete:disabled {
       opacity: 0.4;
+    }
+
+    .gallery-item-fail {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--text-muted);
+      text-align: center;
+      pointer-events: none;
+      z-index: 1;
     }
 
     .gallery-item-loading {
@@ -1426,41 +1442,223 @@
       margin-top: 16px;
     }
 
-    /* Lightbox */
+    /* Lightbox / carrossel de fotos */
     .photo-lightbox {
       display: none;
       position: fixed;
       inset: 0;
       z-index: 500;
-      background: rgba(0, 0, 0, 0.92);
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
     }
 
     .photo-lightbox.open {
-      display: flex;
+      display: block;
     }
 
-    .photo-lightbox img {
-      max-width: 100%;
-      max-height: 92dvh;
-      object-fit: contain;
-      border-radius: 8px;
+    .photo-lightbox-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: rgba(0, 0, 0, 0.92);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .photo-lightbox-panel {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      pointer-events: none;
+    }
+
+    .photo-lightbox-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-bottom: 8px;
+      pointer-events: none;
+    }
+
+    .photo-carousel-count {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.02em;
+      min-height: 1.4em;
     }
 
     .photo-lightbox-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
+      pointer-events: auto;
       width: 44px;
       height: 44px;
+      flex-shrink: 0;
+      margin-left: auto;
       border: none;
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.1);
       color: white;
       font-size: 20px;
       cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .photo-lightbox-close:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .photo-carousel-stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .photo-carousel-viewport {
+      pointer-events: auto;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      height: 100%;
+      scrollbar-width: none;
+      overscroll-behavior-x: contain;
+    }
+
+    .photo-carousel-viewport::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .photo-carousel-viewport {
+        scroll-behavior: auto;
+      }
+    }
+
+    .photo-carousel-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      min-width: 100%;
+      height: 100%;
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      box-sizing: border-box;
+    }
+
+    .photo-carousel-slide-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-height: min(88dvh, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .photo-carousel-slide img {
+      max-width: 100%;
+      max-height: min(88dvh, 100%);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+      vertical-align: middle;
+    }
+
+    .photo-carousel-slide-error {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.45;
+      pointer-events: none;
+    }
+
+    .photo-carousel-nav {
+      pointer-events: auto;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .photo-carousel-nav:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .photo-carousel-nav:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+
+    .photo-carousel-prev {
+      left: 4px;
+    }
+
+    .photo-carousel-next {
+      right: 4px;
+    }
+
+    @media (min-width: 600px) {
+      .photo-carousel-prev {
+        left: 12px;
+      }
+
+      .photo-carousel-next {
+        right: 12px;
+      }
+    }
+
+    .photo-lightbox.open .photo-lightbox-panel {
+      animation: photoLightboxIn 0.22s ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .photo-lightbox.open .photo-lightbox-panel {
+        animation: none;
+      }
+    }
+
+    @keyframes photoLightboxIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .detail-header-inner {
@@ -1641,9 +1839,23 @@
     </div>
   </div>
 
-  <div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
-    <button type="button" class="photo-lightbox-close" id="photo-lightbox-close" aria-label="Fechar">✕</button>
-    <img id="photo-lightbox-img" src="" alt="">
+  <div id="photo-lightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label="Fotos do momento"
+    aria-hidden="true">
+    <button type="button" class="photo-lightbox-backdrop" id="photo-lightbox-backdrop" tabindex="-1"
+      aria-label="Fechar galeria"></button>
+    <div class="photo-lightbox-panel">
+      <div class="photo-lightbox-top">
+        <span id="photo-carousel-count" class="photo-carousel-count" aria-live="polite"></span>
+        <button type="button" class="photo-lightbox-close" id="photo-lightbox-close" aria-label="Fechar">✕</button>
+      </div>
+      <div class="photo-carousel-stage">
+        <button type="button" class="photo-carousel-nav photo-carousel-prev" id="photo-carousel-prev"
+          aria-label="Foto anterior">‹</button>
+        <div class="photo-carousel-viewport" id="photo-carousel-viewport" tabindex="-1"></div>
+        <button type="button" class="photo-carousel-nav photo-carousel-next" id="photo-carousel-next"
+          aria-label="Foto seguinte">›</button>
+      </div>
+    </div>
   </div>
 
   <input type="file" id="input-foto-camera" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,image/*" capture="environment" hidden>
@@ -1751,8 +1963,19 @@
     const inputFotoCamera = document.getElementById('input-foto-camera');
     const inputFotoGaleria = document.getElementById('input-foto-galeria');
     const photoLightbox = document.getElementById('photo-lightbox');
-    const photoLightboxImg = document.getElementById('photo-lightbox-img');
+    const photoLightboxBackdrop = document.getElementById('photo-lightbox-backdrop');
     const photoLightboxClose = document.getElementById('photo-lightbox-close');
+    const photoCarouselViewport = document.getElementById('photo-carousel-viewport');
+    const photoCarouselPrev = document.getElementById('photo-carousel-prev');
+    const photoCarouselNext = document.getElementById('photo-carousel-next');
+    const photoCarouselCount = document.getElementById('photo-carousel-count');
+
+    let carrosselFocoAntes = null;
+    let carrosselBodyOverflow = '';
+    let carrosselScrollHandler = null;
+    let carrosselScrollEndHandler = null;
+    let carrosselKeydownHandler = null;
+    let carrosselResizeHandler = null;
 
     let detalheFilmeId = null;
     let uploadEmProgresso = false;
@@ -1835,6 +2058,47 @@
       document.querySelectorAll('.gallery-btn').forEach(b => { b.disabled = desativar; });
     }
 
+    function obterOverlayFalhaGaleria(img) {
+      return img.closest('.gallery-item')?.querySelector('.gallery-item-fail') ?? null;
+    }
+
+    /** Sucesso: esconde aviso (útil se houver erro espúrio antes do load). */
+    function galeriaFotoCarregou(img) {
+      img.style.removeProperty('display');
+      const fail = obterOverlayFalhaGaleria(img);
+      if (fail) fail.hidden = true;
+    }
+
+    /**
+     * Alguns browsers/WebViews disparam `error` antes do decode ou com `loading=lazy`.
+     * Só mostramos o aviso se, após um instante, a imagem ainda tiver largura 0.
+     */
+    function galeriaFotoErro(img) {
+      img.onerror = null;
+      const fail = obterOverlayFalhaGaleria(img);
+      const marcarFalhaReal = () => {
+        if (img.naturalWidth > 0) {
+          galeriaFotoCarregou(img);
+          return;
+        }
+        img.style.display = 'none';
+        if (fail) fail.hidden = false;
+      };
+      requestAnimationFrame(() => {
+        if (img.naturalWidth > 0) {
+          galeriaFotoCarregou(img);
+          return;
+        }
+        requestAnimationFrame(() => {
+          if (img.naturalWidth > 0) {
+            galeriaFotoCarregou(img);
+            return;
+          }
+          setTimeout(marcarFalhaReal, 200);
+        });
+      });
+    }
+
     function renderizarDetalhe(f) {
       const fotos = f.fotos || [];
       const backdrop = f.backdrop_path ? `${TMDB_IMG}/w780${f.backdrop_path}` : '';
@@ -1875,8 +2139,9 @@
 
       const fotosGrid = fotos.length
         ? `<div class="gallery-grid">
-            ${fotos.map(p => `<div class="gallery-item">
-              <img src="${String(p.url).replace(/"/g, '&quot;')}" loading="lazy" decoding="async" alt="">
+            ${fotos.map((p, gi) => `<div class="gallery-item" data-gallery-index="${gi}">
+              <img src="${String(p.url).replace(/"/g, '&quot;')}" loading="eager" decoding="async" alt="" onload="galeriaFotoCarregou(this)" onerror="galeriaFotoErro(this)">
+              <span class="gallery-item-fail" hidden>Não foi possível carregar a imagem.</span>
               <button type="button" class="gallery-item-delete" data-foto-id="${escapeHtml(p.id)}" aria-label="Remover foto">✕</button>
             </div>`).join('')}
           </div>`
@@ -1914,6 +2179,9 @@
         </div>`;
 
       setDetailEditDeleteVisible(!f.assistido);
+      detailInner.querySelectorAll('.gallery-item img').forEach(img => {
+        if (img.complete && img.naturalWidth > 0) galeriaFotoCarregou(img);
+      });
     }
 
     async function enviarFotoFicheiro(file) {
@@ -1958,16 +2226,171 @@
       mostrarToast('Foto removida');
     }
 
-    function abrirLightbox(url) {
-      photoLightboxImg.src = url;
+    function carrosselPrefersReducedMotion() {
+      return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function carrosselAtualizarUI() {
+      const vp = photoCarouselViewport;
+      if (!vp || !photoLightbox.classList.contains('open')) return;
+      const n = vp.children.length;
+      if (n === 0) return;
+      const w = vp.clientWidth || 1;
+      const idx = Math.min(n - 1, Math.max(0, Math.round(vp.scrollLeft / w)));
+      photoCarouselCount.textContent = n === 1 ? '1 foto' : `${idx + 1} / ${n}`;
+      const atStart = idx <= 0;
+      const atEnd = idx >= n - 1;
+      photoCarouselPrev.disabled = atStart;
+      photoCarouselNext.disabled = atEnd;
+      photoCarouselPrev.setAttribute('aria-disabled', atStart ? 'true' : 'false');
+      photoCarouselNext.setAttribute('aria-disabled', atEnd ? 'true' : 'false');
+    }
+
+    function carrosselIr(delta) {
+      const vp = photoCarouselViewport;
+      if (!vp || vp.children.length === 0) return;
+      const w = vp.clientWidth;
+      const behavior = carrosselPrefersReducedMotion() ? 'auto' : 'smooth';
+      vp.scrollBy({ left: delta * w, behavior });
+    }
+
+    function encerrarCarrosselSemRestaurarFoco() {
+      if (!photoLightbox.classList.contains('open')) return;
+      if (carrosselScrollHandler) {
+        photoCarouselViewport.removeEventListener('scroll', carrosselScrollHandler);
+        carrosselScrollHandler = null;
+      }
+      if (carrosselScrollEndHandler) {
+        photoCarouselViewport.removeEventListener('scrollend', carrosselScrollEndHandler);
+        carrosselScrollEndHandler = null;
+      }
+      if (carrosselResizeHandler) {
+        window.removeEventListener('resize', carrosselResizeHandler);
+        carrosselResizeHandler = null;
+      }
+      if (carrosselKeydownHandler) {
+        document.removeEventListener('keydown', carrosselKeydownHandler);
+        carrosselKeydownHandler = null;
+      }
+      photoCarouselViewport.querySelectorAll('img').forEach(img => {
+        img.onload = null;
+        img.onerror = null;
+        img.removeAttribute('src');
+      });
+      photoCarouselViewport.innerHTML = '';
+      photoCarouselCount.textContent = '';
+      photoLightbox.classList.remove('open');
+      photoLightbox.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = carrosselBodyOverflow;
+      carrosselBodyOverflow = '';
+    }
+
+    function abrirCarrosselFotos(urls, startIndex) {
+      if (!urls || urls.length === 0) return;
+      const focoSalvo = document.activeElement;
+      encerrarCarrosselSemRestaurarFoco();
+      carrosselFocoAntes = focoSalvo;
+      const n = urls.length;
+      const idx0 = Math.min(n - 1, Math.max(0, startIndex | 0));
+      photoCarouselViewport.innerHTML = '';
+      urls.forEach((url, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'photo-carousel-slide';
+        slide.setAttribute('role', 'group');
+        slide.setAttribute('aria-roledescription', 'slide');
+        slide.setAttribute('aria-label', `Foto ${i + 1} de ${n}`);
+        const inner = document.createElement('div');
+        inner.className = 'photo-carousel-slide-inner';
+        const img = document.createElement('img');
+        img.alt = '';
+        img.decoding = 'async';
+        img.loading = Math.abs(i - idx0) <= 1 ? 'eager' : 'lazy';
+        img.src = url;
+        const errEl = document.createElement('p');
+        errEl.className = 'photo-carousel-slide-error';
+        errEl.hidden = true;
+        errEl.textContent = 'Não foi possível mostrar esta imagem.';
+        img.onload = () => { errEl.hidden = true; };
+        img.onerror = () => {
+          img.onerror = null;
+          setTimeout(() => {
+            if (img.naturalWidth > 0) {
+              errEl.hidden = true;
+              return;
+            }
+            img.removeAttribute('src');
+            errEl.hidden = false;
+          }, 200);
+        };
+        inner.appendChild(img);
+        inner.appendChild(errEl);
+        slide.appendChild(inner);
+        photoCarouselViewport.appendChild(slide);
+      });
+      carrosselBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       photoLightbox.classList.add('open');
       photoLightbox.setAttribute('aria-hidden', 'false');
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const vp = photoCarouselViewport;
+          const w = vp.clientWidth || 1;
+          vp.scrollLeft = idx0 * w;
+          carrosselAtualizarUI();
+        });
+      });
+
+      carrosselScrollHandler = () => {
+        requestAnimationFrame(carrosselAtualizarUI);
+      };
+      photoCarouselViewport.addEventListener('scroll', carrosselScrollHandler);
+      carrosselScrollEndHandler = carrosselAtualizarUI;
+      photoCarouselViewport.addEventListener('scrollend', carrosselScrollEndHandler);
+
+      carrosselResizeHandler = () => {
+        const vp = photoCarouselViewport;
+        const nc = vp.children.length;
+        if (nc === 0) return;
+        const w = vp.clientWidth || 1;
+        const idx = Math.min(nc - 1, Math.max(0, Math.round(vp.scrollLeft / w)));
+        vp.scrollLeft = idx * w;
+        carrosselAtualizarUI();
+      };
+      window.addEventListener('resize', carrosselResizeHandler);
+
+      carrosselKeydownHandler = e => {
+        if (!photoLightbox.classList.contains('open')) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          fecharLightbox();
+          return;
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          carrosselIr(-1);
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          carrosselIr(1);
+        }
+      };
+      document.addEventListener('keydown', carrosselKeydownHandler);
+
+      photoLightboxClose.focus();
     }
 
     function fecharLightbox() {
-      photoLightbox.classList.remove('open');
-      photoLightbox.setAttribute('aria-hidden', 'true');
-      photoLightboxImg.src = '';
+      if (!photoLightbox.classList.contains('open')) return;
+      const alvo = carrosselFocoAntes;
+      encerrarCarrosselSemRestaurarFoco();
+      if (alvo && typeof alvo.focus === 'function') {
+        try {
+          alvo.focus();
+        } catch (_) { /* noop */ }
+      }
+      carrosselFocoAntes = null;
     }
 
     async function carregar() {
@@ -2499,8 +2922,15 @@
         removerFoto(delBtn.dataset.fotoId);
         return;
       }
-      const img = e.target.closest('.gallery-item img');
-      if (img) abrirLightbox(img.src);
+      const gItem = e.target.closest('.gallery-item');
+      const gImg = gItem && gItem.querySelector('img');
+      if (gItem && gImg) {
+        const cur = filmes.find(x => x.id === detalheFilmeId);
+        const urls = cur && cur.fotos ? cur.fotos.map(p => p.url) : [];
+        const gi = Number(gItem.dataset.galleryIndex);
+        const idx = Number.isFinite(gi) ? gi : 0;
+        abrirCarrosselFotos(urls, idx);
+      }
     });
 
     inputFotoCamera.addEventListener('change', e => {
@@ -2514,8 +2944,12 @@
     });
 
     photoLightboxClose.addEventListener('click', fecharLightbox);
-    photoLightbox.addEventListener('click', e => {
-      if (e.target === photoLightbox) fecharLightbox();
+    photoLightboxBackdrop.addEventListener('click', fecharLightbox);
+    photoCarouselPrev.addEventListener('click', () => {
+      if (photoLightbox.classList.contains('open')) carrosselIr(-1);
+    });
+    photoCarouselNext.addEventListener('click', () => {
+      if (photoLightbox.classList.contains('open')) carrosselIr(1);
     });
 
     lista.addEventListener('click', e => {

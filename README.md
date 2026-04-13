@@ -35,7 +35,7 @@ Interface **mobile-first** com **layout adaptado a desktop** (grelha de cartões
 - **Poster**, fundo com *backdrop*, título e tipo.
 - Secção **Informações**: estado assistido, datas, previsão, observação, data de adição.
 - Botão grande **Marcar como assistido** (com estado de carregamento).
-- **Momentos juntos**: galeria de fotos (câmara ou galeria), até **40 fotos** por título, ficheiros até **8 MB**, formatos **JPEG, PNG, WebP, HEIC e HEIF**.
+- **Momentos juntos**: galeria de fotos (câmara ou galeria), até **40 fotos** por título, ficheiros até **8 MB**, formatos de entrada **JPEG, PNG, WebP, HEIC e HEIF**. No servidor, cada ficheiro é **normalizado para JPEG** (com [sharp](https://sharp.pixelplumbing.com/)) para compatibilidade com o navegador; orientação EXIF é respeitada (`rotate()`).
 - Toque numa foto abre **lightbox**; botão para remover foto.
 - **Editar** e **eliminar** o item só se **não** estiver assistido.
 
@@ -58,7 +58,7 @@ Interface **mobile-first** com **layout adaptado a desktop** (grelha de cartões
 |--------|------------|
 | Servidor | [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/) |
 | Persistência | Ficheiro JSON no disco |
-| Uploads | [Multer](https://github.com/expressjs/multer) |
+| Uploads | [Multer](https://github.com/expressjs/multer) + [sharp](https://sharp.pixelplumbing.com/) (JPEG no disco) |
 | Configuração | [dotenv](https://github.com/motdotla/dotenv) |
 | Frontend | HTML, CSS e JavaScript em [public/index.html](public/index.html); [SortableJS](https://sortablejs.github.io/Sortable/) (CDN) para reordenação |
 | Metadados de filmes | API TMDB (opcional, via chave) |
@@ -105,6 +105,18 @@ Por defeito o servidor escuta em **http://localhost:3000**. Para reiniciar autom
 ```bash
 npm run dev
 ```
+
+### Fotos HEIC/HEIF antigas
+
+Se ainda tens URLs `.heic`/`.heif` no `filmes.json` (uploads antes da normalização JPEG), corre na raiz do projeto:
+
+```bash
+npm run migrate-fotos-heic
+```
+
+O script converte ficheiros existentes em `public/uploads/filmes/`, atualiza as `url` no JSON e remove os originais. Usa o mesmo `DATA_FILE` que o servidor (variável de ambiente).
+
+Em **Linux**, se a conversão de HEIC falhar, o `libvips` do sharp pode precisar de suporte HEIF no sistema (por exemplo pacotes `libheif1` / `libvips`; ver [documentação do sharp](https://sharp.pixelplumbing.com/install)).
 
 ---
 
@@ -157,7 +169,7 @@ Cada entrada no JSON é semelhante a:
 | `tmdb_id` | number \| null | |
 | `poster_path` | string \| null | Caminho TMDB |
 | `backdrop_path` | string \| null | Caminho TMDB |
-| `fotos` | array | `{ id, url, createdAt }` — `url` servida sob `/uploads/filmes/...` |
+| `fotos` | array | `{ id, url, createdAt }` — `url` servida sob `/uploads/filmes/...` (ficheiros guardados como **JPEG** após o upload) |
 
 Neste repositório, o `.gitignore` inclui `data/*.json` e `public/uploads/`, por isso dados e fotos podem não ir para o Git — faz backup local se precisares. Se o ficheiro de dados não existir, o servidor **cria** um array vazio na primeira utilização.
 
